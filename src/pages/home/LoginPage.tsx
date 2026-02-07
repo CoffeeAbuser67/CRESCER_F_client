@@ -1,139 +1,128 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useNavigate } from "react-router-dom";
-import { Loader2, LogIn } from "lucide-react"; // Ícones
+import { toast } from "react-toastify";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 
-import { axiosForInterceptor } from "@/utils/axios"; // Nossa instância configurada
+// Imports novos da arquitetura limpa
+import { authService } from "@/services/authService";
 import { useUserStore } from "@/store/userStore";
-import { toast } from "react-toastify"; // Assumindo que vc instalou
 
-// 1. Schema de Validação
-const formSchema = z.object({
-  email: z.string().email("Email inválido"),
-  password: z.string().min(1, "Senha obrigatória"),
+// Schema de validação
+const loginSchema = z.object({
+  username: z.string().min(1, "E-mail é obrigatório").email("Formato de e-mail inválido"),
+  password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
 });
+
+type LoginFormInputs = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { checkSession } = useUserStore(); // Para atualizar o usuario após login
+  const { setUser } = useUserStore(); // <--- Usamos setUser, não mais checkSession
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 2. Configuração do Form
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormInputs>({
+    resolver: zodResolver(loginSchema),
   });
 
-  // 3. O Submit Handler
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = async (data: LoginFormInputs) => {
     setIsLoading(true);
     try {
-      // O Cookie HttpOnly é setado automaticamente pelo browser aqui
-      await axiosForInterceptor.post("/auth/login", values);
-      
-      // Forçamos o front a ler os dados do usuário (/auth/me) e atualizar a store
-      await checkSession();
-      
-      toast.success("Login realizado com sucesso!");
-      navigate("/dashboard"); // Redireciona
-      
+      // 1. Faz o login usando o service (que usa a api.ts nova)
+      const userData = await authService.login({
+        username: data.username,
+        password: data.password
+      });
+
+      // 2. Atualiza a store globalmente com os dados recebidos
+      setUser(userData);
+
+      // 3. Feedback e Redirecionamento
+      toast.success(`Bem-vindo, ${userData.username || 'Usuário'}!`);
+      navigate("/dashboard");
+
     } catch (error: any) {
       console.error(error);
-      const msg = error.response?.data?.detail || "Erro ao fazer login";
+      const msg = error.response?.data?.detail || "Erro ao realizar login";
       toast.error(msg);
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <Card className="w-full max-w-md shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
+      <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl font-bold">Acesso ao Sistema</CardTitle>
-          <CardDescription>
-            Digite suas credenciais para entrar no painel
-          </CardDescription>
+          <CardDescription>Digite suas credenciais para entrar</CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              
-              {/* Campo Email */}
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="admin@hospital.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            
+            {/* Campo E-mail */}
+            <div className="space-y-2">
+              <Label htmlFor="username">E-mail</Label>
+              <Input
+                id="username"
+                placeholder="seu@email.com"
+                type="email"
+                {...register("username")}
               />
+              {errors.username && (
+                <p className="text-sm text-red-500">{errors.username.message}</p>
+              )}
+            </div>
 
-              {/* Campo Senha */}
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Senha</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="******" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {/* Campo Senha */}
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="******"
+                  {...register("password")}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-sm text-red-500">{errors.password.message}</p>
+              )}
+            </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Entrando...
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="mr-2 h-4 w-4" /> Entrar
-                  </>
-                )}
-              </Button>
-            </form>
-          </Form>
+            {/* Botão de Login */}
+            <Button className="w-full" type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Entrando...
+                </>
+              ) : (
+                "Entrar"
+              )}
+            </Button>
+            
+          </form>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-xs text-muted-foreground">
-            Esqueceu a senha? Contate o suporte técnico.
-          </p>
-        </CardFooter>
       </Card>
     </div>
   );

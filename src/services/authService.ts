@@ -1,23 +1,21 @@
-import { axiosForInterceptor } from "../utils/axios";
+import { api } from "@/lib/api";
+import type { LoginCredentials, RegisterData } from "@/utils/types";
 
 export const authService = {
-  // Chamado pelo Interceptor quando toma 401
-  async tryRefreshToken(): Promise<boolean> {
-    try {
-      // O Backend lê o cookie 'refresh_token', valida e seta novos cookies
-      await axiosForInterceptor.post('/auth/refresh');
-      return true;
-    } catch (error) {
-      return false;
-    }
+  login: async (credentials: LoginCredentials) => {
+    const response = await api.post("/auth/login", {
+      email: credentials.username, // Mapeamos o valor do input 'username' para a chave 'email'
+      password: credentials.password
+    });
+    return response.data;
   },
 
-  // Logout explícito
-  async logout() {
-    try {
-      await axiosForInterceptor.post('/auth/logout');
-    } catch (error) {
-      console.error("Erro ao fazer logout no backend", error);
-    }
-  }
+  logout: async () => {
+    return await api.post("/auth/logout");
+  },
+
+  register: async (data: RegisterData) => {
+    const response = await api.post("/auth/register", data);
+    return response.data;
+  },
 };

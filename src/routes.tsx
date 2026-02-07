@@ -1,33 +1,25 @@
 import { lazy } from "react";
-import { Navigate, RouteObject } from "react-router-dom";
+import { Navigate } from "react-router-dom";
+import type { RouteObject } from "react-router-dom"; // Correção do erro de tipo
 
 // Layouts
 import AuthLayout from "./layouts/AuthLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
 
-// Guards (Protetores de Rota)
-import { useUserStore } from "./store/userStore";
+// Guards (Importados do arquivo novo)
+import { PublicRoute, PrivateRoute } from "./components/AuthGuards";
 
+// Pages
+// Ajuste o caminho conforme sua estrutura real. 
+// No seu log de erro parecia ser pages/home/LoginPage
 const LoginPage = lazy(() => import("./pages/home/LoginPage"));
-// const DashboardHome = lazy(() => import("./pages/DashboardPage")); 
 
-
-const PrivateRoute = ({ children }: { children: JSX.Element }) => {
-  const { user, sessionChecked } = useUserStore();
-  // Se ainda não checou a sessão, retorna null (o AppInitializer cuida do loading)
-  if (!sessionChecked) return null; 
-  return user ? children : <Navigate to="/login" replace />;
-};
-
-const PublicRoute = ({ children }: { children: JSX.Element }) => {
-  const { user, sessionChecked } = useUserStore();
-  if (!sessionChecked) return null;
-  return user ? <Navigate to="/dashboard" replace /> : children;
-};
-
+// Placeholder temporário pra não quebrar o import
+const DashboardPage = lazy(() => import("./pages/DashboardPage")); 
 
 
 const routes: RouteObject[] = [
+  // 1. Rotas de Autenticação (Públicas)
   {
     path: "/",
     element: (
@@ -36,26 +28,24 @@ const routes: RouteObject[] = [
       </PublicRoute>
     ),
     children: [
-      { path: "", element: <Navigate to="/login" replace /> }, // Redireciona raiz para login
+      { path: "", element: <Navigate to="/login" replace /> },
       { path: "login", element: <LoginPage /> },
-      // { path: "register", element: <RegisterPage /> }, // Se tiver registro público
     ],
   },
 
-// 2. Rotas do Painel (Privadas)
-//   {
-//     path: "/dashboard",
-//     element: (
-//       <PrivateRoute>
-//         <DashboardLayout />
-//       </PrivateRoute>
-//     ),
-//     children: [
-//       { path: "", element: <DashboardHome /> },
-//       // { path: "medicos", element: <MedicosListPage /> },
-//       // { path: "pacientes", element: <PacientesListPage /> },
-//     ],
-//   },
+  // 2. Rotas do Painel (Privadas)
+  {
+    path: "/dashboard",
+    element: (
+      <PrivateRoute>
+        <DashboardLayout />
+      </PrivateRoute>
+    ),
+    children: [
+      { path: "", element: <DashboardPage /> },
+      // { path: "medicos", element: <MedicosList /> },
+    ],
+  },
 
   // 3. Fallback (404)
   {

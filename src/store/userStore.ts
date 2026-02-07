@@ -1,32 +1,33 @@
+// client/src/store/userStore.ts
 import { create } from "zustand";
-import { User } from '../utils/types';
-import { axiosForInterceptor } from '../utils/axios';
+import { api } from "@/lib/api";
+import type { User } from '@/utils/types';
+
 
 interface UserStore {
-    user: User | null;
-    sessionChecked: boolean;
-    setActiveUser: (user: User | null) => void;
-    checkSession: () => Promise<void>; 
+  user: User | null;
+  isLoading: boolean;
+  checkAuth: () => Promise<void>;
+  logout: () => void;
+  setUser: (user: User) => void;
 }
 
 export const useUserStore = create<UserStore>((set) => ({
-    user: null,
-    sessionChecked: false,
+  user: null,
+  isLoading: true,
 
-    setActiveUser: (user) => set({ user }),
+  setUser: (user) => set({ user }),
 
-    checkSession: async () => {
-        try {
-            // *** AJUSTE AQUI *** // Batendo na rota que retorna o usuário atual baseado no cookie
-            const response = await axiosForInterceptor.get('/auth/me');
-            if (response.data) {
-                set({ user: response.data, sessionChecked: true });
-            } else {
-                throw new Error("No user data");
-            }
-        } catch (error) {
-            console.log("Nenhuma sessão ativa encontrada (401 esperado se não logado).");
-            set({ user: null, sessionChecked: true });
-        }
-    },
+  logout: () => set({ user: null, isLoading: false }),
+
+  checkAuth: async () => {
+    set({ isLoading: true });
+    try {
+      // O interceptor em lib/api.ts cuidará do refresh automaticamente se o /me der 401
+      const { data } = await api.get('/auth/me');
+      set({ user: data, isLoading: false });
+    } catch (error) {
+      set({ user: null, isLoading: false });
+    }
+  },
 }));
