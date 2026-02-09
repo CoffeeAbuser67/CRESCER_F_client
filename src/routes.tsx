@@ -6,16 +6,16 @@ import type { RouteObject } from "react-router-dom"; // Correção do erro de ti
 import AuthLayout from "./layouts/AuthLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
 
+
 // Guards (Importados do arquivo novo)
 import { PublicRoute, PrivateRoute } from "./components/AuthGuards";
 
-// Pages
-// Ajuste o caminho conforme sua estrutura real. 
-// No seu log de erro parecia ser pages/home/LoginPage
-const LoginPage = lazy(() => import("./pages/home/LoginPage"));
 
-// Placeholder temporário pra não quebrar o import
+const LoginPage = lazy(() => import("./pages/home/LoginPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage")); 
+const LivroCaixaPage = lazy(() => import("./pages/financeiro/LivroCaixaPage")); 
+
+
 
 
 const routes: RouteObject[] = [
@@ -43,7 +43,7 @@ const routes: RouteObject[] = [
     ),
     children: [
       { path: "", element: <DashboardPage /> },
-      // { path: "medicos", element: <MedicosList /> },
+      { path: "lancamentos", element: <LivroCaixaPage /> },
     ],
   },
 

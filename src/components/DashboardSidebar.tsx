@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Users, LogOut, Loader2 } from "lucide-react";
+import { LayoutDashboard, LogOut, Loader2, Wallet, Settings } from "lucide-react";
 import { toast } from "react-toastify";
 
 import { Button } from "@/components/ui/button";
 import { useUserStore } from "@/store/userStore";
 import { authService } from "@/services/authService";
-import { cn } from "@/lib/utils"; // Utilitário padrão do shadcn para classes condicionais
+import { cn } from "@/lib/utils"; 
 
 export function DashboardSidebar() {
   const navigate = useNavigate();
@@ -16,17 +16,12 @@ export function DashboardSidebar() {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      // 1. Avisa o backend para invalidar o refresh token (Cookie)
       await authService.logout();
-      
-      // 2. Limpa o estado no frontend
       logout();
-      
       toast.info("Sessão encerrada com sucesso.");
       navigate("/login");
     } catch (error) {
       console.error("Erro no logout:", error);
-      // Mesmo se der erro na API, deslogamos o front para não prender o usuário
       logout();
       navigate("/login");
     } finally {
@@ -35,28 +30,40 @@ export function DashboardSidebar() {
   };
 
   return (
-    <aside className="hidden w-64 flex-col border-r border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700 md:flex">
-      {/* Cabeçalho da Sidebar */}
-      <div className="flex h-16 items-center border-b border-gray-200 px-6 dark:border-gray-700">
-        <h1 className="text-xl font-bold text-primary">HM Admin ⚕️</h1>
+    // MUDANÇA 1: Usamos bg-background ou bg-muted/10 para dar um contraste sutil
+    // border-r usa a cor da borda do tema, não gray-200 fixo
+    <aside className="hidden w-64 flex-col border-r border-border bg-background/95 md:flex">
+      
+      {/* Cabeçalho */}
+      <div className="flex h-16 items-center border-b border-border px-6">
+        {/* text-primary garante que seja preto no light e branco no dark */}
+        <h1 className="text-xl font-bold text-primary flex items-center gap-2">
+           <span className="text-2xl">⚕️</span> HM Admin
+        </h1>
       </div>
 
       {/* Links de Navegação */}
       <nav className="flex-1 space-y-2 p-4">
+        
         <NavItem to="/dashboard" icon={<LayoutDashboard className="mr-2 h-4 w-4" />}>
           Dashboard
         </NavItem>
         
-        <NavItem to="/medicos" icon={<Users className="mr-2 h-4 w-4" />}>
-          Médicos
+        <NavItem to="/dashboard/lancamentos" icon={<Wallet className="mr-2 h-4 w-4" />}>
+          Livro Caixa
         </NavItem>
+
+        <NavItem to="/configuracoes" icon={<Settings className="mr-2 h-4 w-4" />}>
+          Cadastros & Config
+        </NavItem>
+      
       </nav>
 
       {/* Rodapé com Logout */}
-      <div className="border-t border-gray-200 p-4 dark:border-gray-700">
+      <div className="border-t border-border p-4">
         <Button 
           variant="ghost" 
-          className="w-full justify-start text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+          className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
           onClick={handleLogout}
           disabled={isLoggingOut}
         >
@@ -72,7 +79,7 @@ export function DashboardSidebar() {
   );
 }
 
-// Componente auxiliar para deixar o link ativo visualmente
+// Componente auxiliar limpo
 interface NavItemProps {
   to: string;
   children: React.ReactNode;
@@ -81,13 +88,16 @@ interface NavItemProps {
 
 function NavItem({ to, children, icon }: NavItemProps) {
   return (
-    <NavLink to={to}>
+    <NavLink to={to} className="block">
       {({ isActive }) => (
         <Button
+          // MUDANÇA 2: Variant 'secondary' ativa automaticamente a cor cinza suave do tema
           variant={isActive ? "secondary" : "ghost"}
           className={cn(
-            "w-full justify-start",
-            isActive && "bg-gray-100 font-semibold dark:bg-gray-700"
+            "w-full justify-start transition-all",
+            isActive 
+              ? "font-semibold shadow-sm" // Destaque extra quando ativo
+              : "text-muted-foreground hover:text-foreground" // Texto mais apagado quando inativo
           )}
         >
           {icon}

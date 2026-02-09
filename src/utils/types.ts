@@ -1,22 +1,70 @@
-// Define o formato do Usuário que vem do backend (/auth/me)
+
 export interface User {
   id: number;
   username: string;
   email: string;
-  // Adicione aqui outros campos se o seu backend retornar (ex: role, avatar, etc)
   is_active?: boolean;
 }
 
-// Define o que precisa enviar para Logar
+
 export interface LoginCredentials {
-  username: string; // FastAPI espera 'username' mesmo que você digite o email na tela
+  username: string; 
   password: string;
 }
 
-// Define o que precisa enviar para Registrar
 export interface RegisterData {
   username: string;
   email: string;
   password: string;
-  // Se tiver confirmação de senha ou outros campos, adicione aqui
+}
+
+
+
+export type TipoLancamento = 'CONSULTA' | 'TERAPIA';
+export type MetodoPagamento = 'PIX' | 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' ;
+
+export interface Profissional {
+  id: string; // UUID
+  nome: string;
+  ativo: boolean;
+}
+
+export interface Servico {
+  id: string; // UUID
+  nome: string;
+  categoria: TipoLancamento;
+  preco_padrao: number | null;
+}
+
+export interface Paciente {
+  id: string; // UUID
+  nome: string;
+  telefone?: string;
+}
+
+export interface Lancamento {
+  id: string; // UUID
+  data_pagamento: string; // YYYY-MM-DD
+  data_competencia: string; // YYYY-MM-DD
+  valor: number; // Vem como number do JSON, cuidado com decimais no JS
+  metodo_pagamento: MetodoPagamento;
+  observacao?: string;
+  
+  // Relacionamentos expandidos
+  paciente: Paciente;
+  servico: Servico;
+  profissional?: Profissional; // Opcional (Terapia)
+}
+
+// Payload para criação (sem ID)
+export interface CreateLancamentoDTO {
+  data_pagamento: string;
+  data_competencia: string;
+  valor: number;
+  metodo_pagamento: MetodoPagamento;
+  observacao?: string;
+  servico_id: string;
+  profissional_id?: string | null;
+  paciente_id?: string | null;
+  paciente_nome?: string | null; // On-the-fly
 }
