@@ -44,11 +44,18 @@ export const columns: ColumnDef<Lancamento>[] = [
         return date.toLocaleDateString("pt-BR");
     }
   },
+
+
   {
     accessorKey: "paciente.nome",
     header: "Paciente",
-    cell: ({ row }) => <span className="font-medium">{row.getValue("paciente.nome")}</span>
+    cell: ({ row }) => {
+      const nome = row.original.paciente?.nome || "Paciente Avulso";
+      return <span className="font-medium text-foreground">{nome}</span>;
+    }
   },
+
+
   {
     accessorKey: "servico.nome",
     header: "Procedimento",

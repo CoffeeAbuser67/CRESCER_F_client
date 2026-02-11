@@ -33,7 +33,6 @@ export interface Servico {
   id: string; // UUID
   nome: string;
   categoria: TipoLancamento;
-  preco_padrao: number | null;
 }
 
 export interface Paciente {
