@@ -48,7 +48,9 @@ import {
 } from "@/components/ui/command";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { toast } from "react-toastify";
 
+import { SmartDatePicker } from "@/components/date-picker-simple";
 
 
 // --- SCHEMA ---
@@ -77,7 +79,6 @@ const formSchema = z
   });
 
 
-
 // Tipo inferido pelo Zod
 // type FormValues = z.infer<typeof formSchema>;
 
@@ -85,20 +86,23 @@ interface LancamentoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  categoriaFilter: string;
 }
 
 export function LancamentoDialog({
   open,
   onOpenChange,
   onSuccess,
+  categoriaFilter = "CONSULTA",
 }: LancamentoDialogProps) {
 
 
   const [pacientes, setPacientes] = useState<{ id: string, nome: string }[]>([]);
   const [comboboxOpen, setComboboxOpen] = useState(false);
-
+  const [searchValue, setSearchValue] = useState("");
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
+
 
   // --- O PULO DO GATO ---
   // Removemos a tipagem genérica <FormValues> do useForm para ele parar de brigar
@@ -120,34 +124,45 @@ export function LancamentoDialog({
 
   useEffect(() => {
     if (open) {
-      financeiroService.getServicos().then(setServicos);
+      financeiroService.getServicos().then((todosOsServicos) => {
+        const apenasConsultas = todosOsServicos.filter((s) => s.categoria === categoriaFilter);
+        setServicos(apenasConsultas);
+      });
       financeiroService.getProfissionais().then(setProfissionais);
-
-      setPacientes([
-        { id: "1", nome: "Paciente Teste Script" },
-        { id: "2", nome: "Maria do Carmo" }
-      ]);
-
+      financeiroService.getPacientes().then(setPacientes);
     }
-  }, [open]);
+
+  }, [open, categoriaFilter]);
 
 
   async function onSubmit(data: any) {
-    // data: any aqui porque o form não está tipado estritamente.
-    // Mas o Zod JÁ VALIDOU, então é seguro mandar pro backend.
     try {
       await financeiroService.createLancamento(data);
-      onSuccess();
+
+      if (onSuccess) onSuccess();
+      toast.success("Lançamento realizado com sucesso!");
+
+
       onOpenChange(false);
       form.reset();
     } catch (error) {
       console.error("Erro ao salvar:", error);
+      toast.error("Erro ao salvar lançamento.");
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-150">
+      <DialogContent className="sm:max-w-150"
+
+
+      >
+
+
+
+
+
+
         <DialogHeader>
           <DialogTitle>Novo Lançamento</DialogTitle>
         </DialogHeader>
@@ -155,28 +170,45 @@ export function LancamentoDialog({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
+
+
+
+
+
+
+
+
+
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="data_pagamento"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Data Pagamento</FormLabel>
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data de Pagamento</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <SmartDatePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="data_competencia"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Data Competência</FormLabel>
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data de Competência</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <SmartDatePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -196,64 +228,55 @@ export function LancamentoDialog({
                   <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
-
                         <Button
-
                           variant="outline"
                           role="combobox"
-                          className={cn(
-                            "w-full justify-between pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-
-
+                          className="w-full justify-between font-normal bg-background"
                         >
-                          {field.value || "Selecione ou digite..."}
+                          {/* Se o campo tem valor, mostra o valor. Se não, placeholder */}
+                          {field.value || "Criar ou Selecionar paciente..."}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0" align="start">
+                    <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start" onPointerDownOutside={(e) => e.preventDefault()} onTouchMove={(e) => e.stopPropagation()}>
                       <Command>
-                        <CommandInput placeholder="Buscar paciente..." />
-                        <CommandList>
-                          <CommandEmpty>
-                            <div className="p-2">
-                              <p className="text-sm text-muted-foreground mb-2">Paciente não encontrado.</p>
-                              <Button
-                                variant="secondary"
-                                className="w-full h-8 text-xs"
-                                onClick={() => {
-                                  // Pega o que o usuário digitou no search do command (hackzinho)
-                                  // Ou simplesmente deixa ele preencher no campo
-                                  // Simplificação: O usuário deve fechar e assumir o valor
-                                  setComboboxOpen(false);
-                                }}
-                              >
-                                <Plus className="mr-2 h-3 w-3" />
-                                Usar nome digitado (Novo)
-                              </Button>
-                            </div>
+                        <CommandInput
+                          placeholder="Digite o nome..."
+                          onValueChange={setSearchValue} // Captura o que está sendo digitado
+                        />
+                        <CommandList
+                          className="max-h-60 overflow-y-auto"
+                          onWheel={(e) => e.stopPropagation()}
+                        >
+                          {/* Se não achar ninguém, oferece criar o novo na hora */}
+                          <CommandEmpty className="p-1">
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start text-xs gap-2"
+                              onClick={() => {
+                                form.setValue("paciente_nome", searchValue);
+                                setComboboxOpen(false);
+                              }}
+                            >
+                              <Plus className="h-3 w-3" />
+                              Criar novo: "{searchValue}"
+                            </Button>
                           </CommandEmpty>
+
                           <CommandGroup>
-                            {pacientes.map((paciente) => (
+                            {pacientes.map((p) => (
                               <CommandItem
-                                value={paciente.nome}
-                                key={paciente.id}
-                                onSelect={() => {
-                                  form.setValue("paciente_nome", paciente.nome);
+                                key={p.id}
+                                value={p.nome}
+                                onSelect={(currentValue) => {
+                                  // Salvamos o nome exato no formulário
+                                  form.setValue("paciente_nome", currentValue);
                                   setComboboxOpen(false);
                                 }}
                               >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    paciente.nome === field.value
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  )}
-                                />
-                                {paciente.nome}
+                                <Check className={cn("mr-2 h-4 w-4", field.value === p.nome ? "opacity-100" : "opacity-0")} />
+                                {p.nome}
                               </CommandItem>
                             ))}
                           </CommandGroup>
@@ -261,17 +284,6 @@ export function LancamentoDialog({
                       </Command>
                     </PopoverContent>
                   </Popover>
-
-                  {/* INPUT ESCONDIDO/AUXILIAR PARA CASO QUEIRA DIGITAR MANUALMENTE SE O COMBOBOX FALHAR */}
-                  <div className="pt-1">
-                    <Input
-                      placeholder="Ou digite o nome completo aqui se for novo..."
-                      {...field}
-                      onChange={field.onChange}
-                      className={cn("h-8 text-xs bg-muted/20", comboboxOpen ? "hidden" : "block")}
-                    />
-                  </div>
-
                   <FormMessage />
                 </FormItem>
               )}
@@ -293,7 +305,7 @@ export function LancamentoDialog({
                           <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent position="popper" className="max-h-60">
                         {servicos.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
                             {s.nome}
@@ -343,7 +355,7 @@ export function LancamentoDialog({
                           <SelectValue placeholder="Opcional (Terapia)" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent position="popper" className="max-h-60">
                         {profissionais.map((p) => (
                           <SelectItem key={p.id} value={p.id}>
                             {p.nome}
@@ -368,7 +380,7 @@ export function LancamentoDialog({
                           <SelectValue placeholder="Método" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent position="popper" className="max-h-60">
                         <SelectItem value="PIX">PIX</SelectItem>
                         <SelectItem value="DINHEIRO">Dinheiro</SelectItem>
                         <SelectItem value="CARTAO_CREDITO">Cartão Crédito</SelectItem>

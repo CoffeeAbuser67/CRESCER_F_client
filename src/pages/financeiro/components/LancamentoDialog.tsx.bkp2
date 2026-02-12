@@ -225,7 +225,7 @@ export function LancamentoDialog({
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Paciente</FormLabel>
-                  <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                  <Popover open={comboboxOpen} onOpenChange={setComboboxOpen} modal={false}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -239,15 +239,17 @@ export function LancamentoDialog({
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start" onPointerDownOutside={(e) => e.preventDefault()} onTouchMove={(e) => e.stopPropagation()}>
-                      <Command>
+                    <PopoverContent className="w-(--radix-popover-trigger-width) p-0 pointer-events-auto" align="start" onPointerDownOutside={(e) => e.preventDefault()} onTouchMove={(e) => e.stopPropagation()}>
+                      <Command overscroll-contain>
                         <CommandInput
                           placeholder="Digite o nome..."
                           onValueChange={setSearchValue} // Captura o que está sendo digitado
                         />
                         <CommandList
                           className="max-h-60 overflow-y-auto"
+                          style={{ touchAction: 'pan-y' }}
                           onWheel={(e) => e.stopPropagation()}
+                          onTouchStart={(e) => e.stopPropagation()}
                         >
                           {/* Se não achar ninguém, oferece criar o novo na hora */}
                           <CommandEmpty className="p-1">

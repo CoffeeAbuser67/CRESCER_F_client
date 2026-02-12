@@ -14,8 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 
 
-import { DateRangePicker } from "@/components/date-range-picker";
-import type { DateRange } from "react-day-picker";
+import { parseDate } from "@internationalized/date";
+import { SmartDateRangePicker } from "@/components/date-range-picker-aria";
 
 
 const TAB_TO_CATEGORY: Record<string, string> = {
@@ -33,9 +33,9 @@ export default function LivroCaixaPage() {
   const [selectedMedicos, setSelectedMedicos] = useState<string[]>([]);
 
 
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date()),
+  const [range, setRange] = useState({
+    start: parseDate(format(startOfMonth(new Date()), "yyyy-MM-dd")),
+    end: parseDate(format(endOfMonth(new Date()), "yyyy-MM-dd"))
   });
 
 
@@ -44,44 +44,38 @@ export default function LivroCaixaPage() {
   const BATCH_SIZE = 50;
 
 
-
   const fetchData = useCallback(async (isNewSearch: boolean = false) => {
-    if (!date?.from || !date?.to) return;
-
     setIsLoading(true);
     try {
       const currentPage = isNewSearch ? 0 : page;
       const skip = currentPage * BATCH_SIZE;
 
       const data = await financeiroService.getLancamentos(
-        format(date.from, "yyyy-MM-dd"),
-        format(date.to, "yyyy-MM-dd"),
+        range.start.toString(),
+        range.end.toString(),
         skip,
         BATCH_SIZE
       );
 
       if (isNewSearch) {
         setLancamentos(data);
-        setPage(1); // Prepara para o próximo lote
+        setPage(1);
       } else {
         setLancamentos(prev => [...prev, ...data]);
         setPage(prev => prev + 1);
       }
-
-      // Se veio menos que o BATCH_SIZE, significa que o banco "esvaziou" para esse filtro
       setHasMore(data.length === BATCH_SIZE);
-
     } catch (error) {
       console.error(error);
     } finally {
       setIsLoading(false);
     }
-  }, [date, page]);
+  }, [range, page])
 
 
   useEffect(() => {
     fetchData(true);
-  }, [date]);
+  }, [range]);
 
   const medicosDisponiveis = Array.from(
     new Map(
@@ -109,6 +103,7 @@ export default function LivroCaixaPage() {
 
 
 
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="border-b pb-0">
           <TabsList className="bg-transparent h-auto p-0 gap-6">
@@ -127,18 +122,15 @@ export default function LivroCaixaPage() {
 
 
 
-
-
-
-
-
-
           <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between bg-muted/20 p-4 rounded-lg border">
             <div className="flex flex-col sm:flex-row flex-1 w-full gap-4 items-center">
 
-              <div className="w-full sm:w-auto">
-                <DateRangePicker value={date} onChange={setDate} />
-              </div>
+
+              <SmartDateRangePicker
+                value={range}
+                onChange={setRange}
+              />
+
 
 
               <div className="w-full flex-1 max-w-xl flex items-center gap-2">
@@ -157,7 +149,7 @@ export default function LivroCaixaPage() {
               </div>
             </div>
 
-   
+
             <Button onClick={() => setIsDialogOpen(true)} className="w-full xl:w-auto shadow-md shrink-0">
               <Plus className="mr-2 h-4 w-4" /> Novo Lançamento
             </Button>
@@ -223,7 +215,7 @@ export default function LivroCaixaPage() {
       <LancamentoDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
-        onSuccess={fetchData}
+        onSuccess={() => fetchData(true)}
         categoriaFilter={TAB_TO_CATEGORY[activeTab]}
       />
 
