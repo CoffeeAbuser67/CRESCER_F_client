@@ -1,19 +1,76 @@
 import {
   Button, CalendarCell, CalendarGrid, CalendarGridBody, CalendarGridHeader,
   CalendarHeaderCell, DateInput, DateRangePicker, DateSegment, Dialog,
-  Group, Heading, Label, Popover, RangeCalendar
+  Group, Heading, Label, Popover, RangeCalendar,
+  I18nProvider,
+  RangeCalendarStateContext 
 } from 'react-aria-components';
 import { CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { useContext } from 'react'; 
 
-import {
-  I18nProvider
-} from 'react-aria-components';
 
+function CustomCalendarCell({ date }: { date: any }) {
+  const state = useContext(RangeCalendarStateContext);
+  
+  // Calculamos manualmente se a data faz parte do intervalo selecionado!
+  const isCustomSelected = state?.highlightedRange 
+    ? date.compare(state.highlightedRange.start) >= 0 && date.compare(state.highlightedRange.end) <= 0 
+    : false;
+    
+  const isCustomSelectionStart = state?.highlightedRange 
+    ? date.compare(state.highlightedRange.start) === 0 
+    : false;
+    
+  const isCustomSelectionEnd = state?.highlightedRange 
+    ? date.compare(state.highlightedRange.end) === 0 
+    : false;
+
+  return (
+    <CalendarCell
+      date={date}
+      className={({ isOutsideMonth, isToday, isSelected, isSelectionStart, isSelectionEnd }) => {
+        
+        // Juntamos o estado original com o nosso estado forçado
+        const selected = isSelected || isCustomSelected;
+        const start = isSelectionStart || isCustomSelectionStart;
+        const end = isSelectionEnd || isCustomSelectionEnd;
+
+        return cn(
+          "flex h-9 w-9 items-center justify-center rounded-md text-sm outline-none transition-all cursor-pointer",
+          "hover:bg-accent hover:text-accent-foreground",
+
+          // 1. FORA DO MÊS (Não selecionado)
+          isOutsideMonth && !selected && "text-muted-foreground/30",
+
+          // 2. O MEIO DO INTERVALO (Dias normais do mês)
+          selected && !start && !end && !isOutsideMonth && "bg-primary/20 text-primary",
+
+          // 3. O MEIO DO INTERVALO (Dias FORA do mês)
+          // Agora vai funcionar! Fundo e fonte levemente mais opacos que a cor principal
+          selected && !start && !end && isOutsideMonth && "bg-primary/10 text-primary/40",
+
+          // 4. INÍCIO DA SELEÇÃO
+          start && !isOutsideMonth && "bg-primary text-primary-foreground rounded-l-md",
+          start && isOutsideMonth && "bg-primary/60 text-primary-foreground/70 rounded-l-md",
+
+          // 5. FIM DA SELEÇÃO
+          end && !isOutsideMonth && "bg-primary text-primary-foreground rounded-r-md",
+          end && isOutsideMonth && "bg-primary/60 text-primary-foreground/70 rounded-r-md",
+
+          // 6. SELEÇÃO ÚNICA (Início e Fim no mesmo dia)
+          start && end && "rounded-md",
+
+          // 7. HOJE
+          isToday && "border border-primary"
+        );
+      }}
+    />
+  );
+}
 
 export function SmartDateRangePicker({ label, value, onChange, ...props }: any) {
   return (
-
     <I18nProvider locale="pt-BR">
       <DateRangePicker
         value={value}
@@ -24,8 +81,7 @@ export function SmartDateRangePicker({ label, value, onChange, ...props }: any) 
         {label && <Label className="text-sm font-extrabold text-foreground">{label}</Label>}
 
         <Group className="flex h-10 w-full md:w-[320px] items-center rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-
-          {/* DateInput START - Centralizado */}
+          
           <DateInput slot="start" className="flex flex-1 justify-center">
             {(segment) => (
               <DateSegment
@@ -35,10 +91,8 @@ export function SmartDateRangePicker({ label, value, onChange, ...props }: any) 
             )}
           </DateInput>
 
-          {/* Separador Centralizado */}
           <span aria-hidden="true" className="px-1 text-muted-foreground font-bold">–</span>
 
-          {/* DateInput END - Centralizado */}
           <DateInput slot="end" className="flex flex-1 justify-center">
             {(segment) => (
               <DateSegment
@@ -74,47 +128,18 @@ export function SmartDateRangePicker({ label, value, onChange, ...props }: any) 
                     </CalendarHeaderCell>
                   )}
                 </CalendarGridHeader>
+                
                 <CalendarGridBody>
                   {(date) => (
-                    <CalendarCell
-                      date={date}
-                      className={cn(
-                        // Estilo Base
-                        "flex h-9 w-9 items-center justify-center rounded-md text-sm outline-none transition-all cursor-pointer",
-                        "hover:bg-accent hover:text-accent-foreground",
-
-                        // Fora do mês
-                        "outside-month:text-muted-foreground/30",
-
-                        // Seleção do RANGE (O MEIO)
-                        "data-[selected=true]:bg-primary/20 data-[selected=true]:text-primary",
-
-                        // INÍCIO DA SELEÇÃO
-                        "data-[selection-start=true]:bg-primary data-[selection-start=true]:text-primary-foreground data-[selection-start=true]:rounded-l-md",
-
-                        // FIM DA SELEÇÃO
-                        "data-[selection-end=true]:bg-primary data-[selection-end=true]:text-primary-foreground data-[selection-end=true]:rounded-r-md",
-
-                        // Seleção ÚNICA (mesmo dia início e fim)
-                        "data-[selection-start=true]:data-[selection-end=true]:rounded-md",
-
-                        // Hoje
-                        "data-[today=true]:border data-[today=true]:border-primary"
-                      )}
-                    />
+                    <CustomCalendarCell date={date} />
                   )}
                 </CalendarGridBody>
+
               </CalendarGrid>
             </RangeCalendar>
           </Dialog>
         </Popover>
       </DateRangePicker>
     </I18nProvider>
-
-
-
-
-
-
   );
 }

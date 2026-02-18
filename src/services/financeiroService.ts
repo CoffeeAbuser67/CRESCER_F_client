@@ -28,6 +28,10 @@ export const financeiroService = {
     return data;
   },
 
+  deleteLancamento: async (id: string): Promise<void> => {
+    await api.delete(`/financeiro/lancamentos/${id}`);
+  },
+
   createLancamento: async (payload: CreateLancamentoDTO) => {
     const { data } = await api.post<Lancamento>(
       "/financeiro/lancamentos",

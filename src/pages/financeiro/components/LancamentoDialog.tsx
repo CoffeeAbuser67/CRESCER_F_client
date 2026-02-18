@@ -31,13 +31,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// *******************
+// MODIFIQUE AQUI!
+// *******************
+// Importa o Textarea recém-criado oficialmente pelo ShadcnUI
+import { Textarea } from "@/components/ui/textarea";
+
 import { financeiroService } from "@/services/financeiroService";
 import type { Servico, Profissional } from "@/utils/types";
-
 import { cn } from "@/lib/utils";
-
 import { Check, ChevronsUpDown, Plus } from "lucide-react";
-
 import {
   Command,
   CommandEmpty,
@@ -49,17 +52,19 @@ import {
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "react-toastify";
-
 import { SmartDatePicker } from "@/components/date-picker-simple";
 
+// *******************
+// AJUSTE AQUI!
+// *******************
+// A "gambiarra" do Textarea (o forwardRef inteiro) que ficava aqui FOI COMPLETAMENTE REMOVIDA.
+// O código agora usa a versão importada lá em cima.
 
 // --- SCHEMA ---
 const formSchema = z
   .object({
     data_pagamento: z.string().min(1, "Obrigatório"),
     data_competencia: z.string().min(1, "Obrigatório"),
-    // O problema estava aqui. O z.coerce cria um conflito de tipos.
-    // Mas com o 'as any' lá embaixo, isso vai passar.
     valor: z.coerce.number().min(0.01, "Valor deve ser maior que zero"),
     metodo_pagamento: z.enum([
       "PIX",
@@ -78,10 +83,6 @@ const formSchema = z
     path: ["paciente_nome"]
   });
 
-
-// Tipo inferido pelo Zod
-// type FormValues = z.infer<typeof formSchema>;
-
 interface LancamentoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -95,18 +96,12 @@ export function LancamentoDialog({
   onSuccess,
   categoriaFilter = "CONSULTA",
 }: LancamentoDialogProps) {
-
-
   const [pacientes, setPacientes] = useState<{ id: string, nome: string }[]>([]);
   const [comboboxOpen, setComboboxOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
 
-
-  // --- O PULO DO GATO ---
-  // Removemos a tipagem genérica <FormValues> do useForm para ele parar de brigar
-  // E usamos 'resolver: zodResolver(formSchema) as any' para silenciar o erro de compatibilidade
   const form = useForm({
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
@@ -116,7 +111,6 @@ export function LancamentoDialog({
       valor: 0,
       observacao: "",
       paciente_nome: "",
-      // Importante: use undefined para campos opcionais vazios
       profissional_id: undefined,
       servico_id: undefined,
     },
@@ -131,18 +125,13 @@ export function LancamentoDialog({
       financeiroService.getProfissionais().then(setProfissionais);
       financeiroService.getPacientes().then(setPacientes);
     }
-
   }, [open, categoriaFilter]);
-
 
   async function onSubmit(data: any) {
     try {
       await financeiroService.createLancamento(data);
-
       if (onSuccess) onSuccess();
       toast.success("Lançamento realizado com sucesso!");
-
-
       onOpenChange(false);
       form.reset();
     } catch (error) {
@@ -153,33 +142,13 @@ export function LancamentoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-150"
-
-
-      >
-
-
-
-
-
-
+      <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
           <DialogTitle>Novo Lançamento</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-
-
-
-
-
-
-
-
-
-
-
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -216,9 +185,6 @@ export function LancamentoDialog({
               />
             </div>
 
-
-
-
             <FormField
               control={form.control}
               name="paciente_nome"
@@ -233,23 +199,21 @@ export function LancamentoDialog({
                           role="combobox"
                           className="w-full justify-between font-normal bg-background"
                         >
-                          {/* Se o campo tem valor, mostra o valor. Se não, placeholder */}
                           {field.value || "Criar ou Selecionar paciente..."}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start" onPointerDownOutside={(e) => e.preventDefault()} onTouchMove={(e) => e.stopPropagation()}>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start" onPointerDownOutside={(e) => e.preventDefault()} onTouchMove={(e) => e.stopPropagation()}>
                       <Command>
                         <CommandInput
                           placeholder="Digite o nome..."
-                          onValueChange={setSearchValue} // Captura o que está sendo digitado
+                          onValueChange={setSearchValue}
                         />
                         <CommandList
                           className="max-h-60 overflow-y-auto"
                           onWheel={(e) => e.stopPropagation()}
                         >
-                          {/* Se não achar ninguém, oferece criar o novo na hora */}
                           <CommandEmpty className="p-1">
                             <Button
                               variant="ghost"
@@ -263,14 +227,12 @@ export function LancamentoDialog({
                               Criar novo: "{searchValue}"
                             </Button>
                           </CommandEmpty>
-
                           <CommandGroup>
                             {pacientes.map((p) => (
                               <CommandItem
                                 key={p.id}
                                 value={p.nome}
                                 onSelect={(currentValue) => {
-                                  // Salvamos o nome exato no formulário
                                   form.setValue("paciente_nome", currentValue);
                                   setComboboxOpen(false);
                                 }}
@@ -288,9 +250,6 @@ export function LancamentoDialog({
                 </FormItem>
               )}
             />
-
-
-
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -329,7 +288,6 @@ export function LancamentoDialog({
                         type="number"
                         step="0.01"
                         {...field}
-                        // O Zod vai converter string -> number no submit
                         onChange={field.onChange}
                       />
                     </FormControl>
@@ -392,6 +350,24 @@ export function LancamentoDialog({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="observacao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Observações / Anotações</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Detalhes adicionais sobre o lançamento..."
+                      className="resize-none h-24 mt-1"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter className="pt-4">
               <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
