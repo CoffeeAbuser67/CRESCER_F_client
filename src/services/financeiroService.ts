@@ -1,5 +1,4 @@
-// src/services/financeiroService.ts
-import { api } from "../lib/api"; // Sua instância configurada do Axios
+import { api } from "../lib/api";
 import type {
   Lancamento,
   CreateLancamentoDTO,
@@ -40,6 +39,16 @@ export const financeiroService = {
     return data;
   },
 
+  createProfissional: async (payload: {
+    nome: string;
+  }): Promise<Profissional> => {
+    const { data } = await api.post<Profissional>(
+      "/financeiro/profissionais",
+      payload,
+    );
+    return data;
+  },
+
   getPacientes: async () => {
     const { data } = await api.get<Paciente[]>("/financeiro/pacientes");
     return data;
@@ -52,6 +61,23 @@ export const financeiroService = {
 
   getServicos: async () => {
     const { data } = await api.get<Servico[]>("/financeiro/servicos");
+    return data;
+  },
+
+  getTodosProfissionais: async (): Promise<Profissional[]> => {
+    const response = await api.get("/financeiro/admin/profissionais");
+    return response.data;
+  },
+
+  toggleProfissionalStatus: async (id: string): Promise<void> => {
+    await api.patch(`/financeiro/admin/profissionais/${id}/toggle-status`);
+  },
+
+  createServico: async (payload: {
+    nome: string;
+    categoria: string;
+  }): Promise<Servico> => {
+    const { data } = await api.post<Servico>("/financeiro/servicos", payload);
     return data;
   },
 };

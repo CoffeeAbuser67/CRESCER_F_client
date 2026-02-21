@@ -26,6 +26,7 @@ export type MetodoPagamento = 'PIX' | 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DE
 export interface Profissional {
   id: string; // UUID
   nome: string;
+  especialidade?: string; 
   ativo: boolean;
 }
 

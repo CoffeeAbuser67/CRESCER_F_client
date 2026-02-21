@@ -14,8 +14,7 @@ import { PublicRoute, PrivateRoute } from "./components/AuthGuards";
 const LoginPage = lazy(() => import("./pages/home/LoginPage"));
 const DashboardPage = lazy(() => import("./pages/DashboardPage")); 
 const LivroCaixaPage = lazy(() => import("./pages/financeiro/LivroCaixaPage")); 
-
-
+const ConfiguracoesPage = lazy(() => import("./pages/configuracoes/ConfiguracoesPage")); 
 
 
 const routes: RouteObject[] = [
@@ -44,8 +43,25 @@ const routes: RouteObject[] = [
     children: [
       { path: "", element: <DashboardPage /> },
       { path: "lancamentos", element: <LivroCaixaPage /> },
+      { path: "configuracoes", element: <ConfiguracoesPage /> },
+
+
+
+
+
+
     ],
   },
+
+
+
+
+
+
+
+
+
+
 
   // 3. Fallback (404)
   {

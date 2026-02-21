@@ -31,10 +31,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// *******************
-// MODIFIQUE AQUI!
-// *******************
-// Importa o Textarea recém-criado oficialmente pelo ShadcnUI
 import { Textarea } from "@/components/ui/textarea";
 
 import { financeiroService } from "@/services/financeiroService";
@@ -54,11 +50,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "react-toastify";
 import { SmartDatePicker } from "@/components/date-picker-simple";
 
-// *******************
-// AJUSTE AQUI!
-// *******************
-// A "gambiarra" do Textarea (o forwardRef inteiro) que ficava aqui FOI COMPLETAMENTE REMOVIDA.
-// O código agora usa a versão importada lá em cima.
 
 // --- SCHEMA ---
 const formSchema = z
@@ -73,7 +64,7 @@ const formSchema = z
       "CARTAO_DEBITO",
     ]),
     servico_id: z.string().uuid("Selecione um serviço"),
-    profissional_id: z.string().nullable().optional(),
+    profissional_id: z.string().uuid("Selecione um profissional"),
     observacao: z.string().optional(),
     paciente_id: z.string().optional(),
     paciente_nome: z.string().optional(),
@@ -111,21 +102,32 @@ export function LancamentoDialog({
       valor: 0,
       observacao: "",
       paciente_nome: "",
-      profissional_id: undefined,
-      servico_id: undefined,
+      profissional_id: "",
+      servico_id: "",
     },
   });
 
+
   useEffect(() => {
     if (open) {
-      financeiroService.getServicos().then((todosOsServicos) => {
-        const apenasConsultas = todosOsServicos.filter((s) => s.categoria === categoriaFilter);
-        setServicos(apenasConsultas);
-      });
+      // 1. Carrega os dados básicos
       financeiroService.getProfissionais().then(setProfissionais);
       financeiroService.getPacientes().then(setPacientes);
+
+      // 2. Carrega os serviços e aplica as regras de negócio automáticas
+      financeiroService.getServicos().then((todosOsServicos) => {
+        const servicosFiltrados = todosOsServicos.filter((s) => s.categoria === categoriaFilter);
+        setServicos(servicosFiltrados);
+
+        // Regra da CONSULTA: Auto-seleciona o serviço de consulta
+        if (categoriaFilter === "CONSULTA" && servicosFiltrados.length > 0) {
+          form.setValue("servico_id", servicosFiltrados[0].id);
+        }
+
+      });
     }
-  }, [open, categoriaFilter]);
+  }, [open, categoriaFilter, form]);
+
 
   async function onSubmit(data: any) {
     try {
@@ -144,7 +146,9 @@ export function LancamentoDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
-          <DialogTitle>Novo Lançamento</DialogTitle>
+          <DialogTitle>
+            {categoriaFilter === "CONSULTA" ? "Nova Consulta" : "Nova Terapia"}
+          </DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -252,22 +256,51 @@ export function LancamentoDialog({
             />
 
             <div className="grid grid-cols-2 gap-4">
+
+              {categoriaFilter === "TERAPIA" && (
+                <FormField
+                  control={form.control}
+                  name="servico_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Serviço</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || undefined}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent position="popper" className="max-h-60">
+                          {servicos.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+
               <FormField
                 control={form.control}
-                name="servico_id"
+                name="profissional_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Serviço</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormLabel>Profissional</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || undefined}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione..." />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent position="popper" className="max-h-60">
-                        {servicos.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.nome}
+                        {profissionais.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.nome}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -277,6 +310,8 @@ export function LancamentoDialog({
                 )}
               />
 
+
+              {/* Sempre visíveis */}
               <FormField
                 control={form.control}
                 name="valor"
@@ -291,36 +326,6 @@ export function LancamentoDialog({
                         onChange={field.onChange}
                       />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="profissional_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Profissional</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || undefined}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Opcional (Terapia)" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent position="popper" className="max-h-60">
-                        {profissionais.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -373,7 +378,14 @@ export function LancamentoDialog({
               <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit">Salvar Lançamento</Button>
+
+              <Button
+                type="submit"
+                className={categoriaFilter === "TERAPIA" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : ""}
+              >
+                Salvar
+              </Button>
+
             </DialogFooter>
 
           </form>
