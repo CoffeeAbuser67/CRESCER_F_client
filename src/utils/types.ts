@@ -23,11 +23,16 @@ export interface RegisterData {
 export type TipoLancamento = 'CONSULTA' | 'TERAPIA';
 export type MetodoPagamento = 'PIX' | 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' ;
 
+export interface Especialidade {
+  id: string;
+  nome: string;
+}
+
 export interface Profissional {
   id: string; // UUID
   nome: string;
-  especialidade?: string; 
   ativo: boolean;
+  especialidades: Especialidade[];
 }
 
 export interface Servico {

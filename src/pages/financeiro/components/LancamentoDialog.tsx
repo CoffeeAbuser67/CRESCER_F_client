@@ -257,32 +257,31 @@ export function LancamentoDialog({
 
             <div className="grid grid-cols-2 gap-4">
 
-              {categoriaFilter === "TERAPIA" && (
-                <FormField
-                  control={form.control}
-                  name="servico_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Serviço</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || undefined}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione..." />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent position="popper" className="max-h-60">
-                          {servicos.map((s) => (
-                            <SelectItem key={s.id} value={s.id}>
-                              {s.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              <FormField
+                control={form.control}
+                name="servico_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Serviço</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || undefined}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent position="popper" className="max-h-60">
+                        {servicos.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
 
 
               <FormField
