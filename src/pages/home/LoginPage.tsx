@@ -25,7 +25,7 @@ type LoginFormInputs = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { setUser } = useUserStore(); // <--- Usamos setUser, não mais checkSession
+  const { checkAuth, setUser } = useUserStore(); 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -48,6 +48,7 @@ export default function LoginPage() {
 
       // 2. Atualiza a store globalmente com os dados recebidos
       setUser(userData);
+      await checkAuth(); // Preciso chamar aqui pra pegar o role do cara
 
       // 3. Feedback e Redirecionamento
       toast.success(`Bem-vindo, ${userData.username || 'Usuário'}!`);

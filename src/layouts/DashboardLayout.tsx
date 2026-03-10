@@ -1,17 +1,18 @@
 import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import { DashboardSidebar } from "@/components/DashboardSidebar";
+import { Sidebar } from "@/components/Sidebar";
+import { MobileNavbar } from "@/components/MobileNavbar";
 
 export default function DashboardLayout() {
   return (
-    <div className="flex h-screen">
-      
-      {/* Sidebar isolada */}
-      <DashboardSidebar />
+    <div className="flex h-screen w-full flex-col md:flex-row overflow-hidden">
+
+      <Sidebar />
+      <MobileNavbar />
 
       <main className="flex flex-1 flex-col overflow-hidden">
-      
+
         <div className="flex-1 overflow-auto p-2">
           <Suspense
             fallback={

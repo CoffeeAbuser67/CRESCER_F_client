@@ -22,9 +22,25 @@ export const PublicRoute = ({ children }: GuardProps) => {
   
   // Se já tem usuário logado tentando acessar login, manda pro dashboard
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/dashboard/lancamentos" replace />;
   }
   
-  // Se não tem usuário, deixa ver a página de login
+  return <>{children}</>;
+};
+
+
+export const AdminRoute = ({ children }: GuardProps) => {
+  const { user } = useUserStore();
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Se o usuário não for ADMIN, chuta ele para o Livro Caixa (onde ele tem permissão)
+  if (user.role !== "ADMIN") {
+    return <Navigate to="/dashboard/lancamentos" replace />;
+  }
+
+  // Se for ADMIN, tapete vermelho: renderiza o componente
   return <>{children}</>;
 };

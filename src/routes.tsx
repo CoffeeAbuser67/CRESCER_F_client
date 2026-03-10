@@ -8,13 +8,13 @@ import DashboardLayout from "./layouts/DashboardLayout";
 
 
 // Guards (Importados do arquivo novo)
-import { PublicRoute, PrivateRoute } from "./components/AuthGuards";
+import { PublicRoute, PrivateRoute, AdminRoute } from "./components/AuthGuards";
 
 
 const LoginPage = lazy(() => import("./pages/home/LoginPage"));
-const DashboardPage = lazy(() => import("./pages/DashboardPage")); 
-const LivroCaixaPage = lazy(() => import("./pages/financeiro/LivroCaixaPage")); 
-const ConfiguracoesPage = lazy(() => import("./pages/configuracoes/ConfiguracoesPage")); 
+const DashboardPage = lazy(() => import("./pages/dashboard/DashboardPage"));
+const LivroCaixaPage = lazy(() => import("./pages/financeiro/LivroCaixaPage"));
+const ConfiguracoesPage = lazy(() => import("./pages/configuracoes/ConfiguracoesPage"));
 
 
 const routes: RouteObject[] = [
@@ -32,6 +32,8 @@ const routes: RouteObject[] = [
     ],
   },
 
+
+
   // 2. Rotas do Painel (Privadas)
   {
     path: "/dashboard",
@@ -41,27 +43,28 @@ const routes: RouteObject[] = [
       </PrivateRoute>
     ),
     children: [
-      { path: "", element: <DashboardPage /> },
-      { path: "lancamentos", element: <LivroCaixaPage /> },
-      { path: "configuracoes", element: <ConfiguracoesPage /> },
-
-
-
-
-
-
+      {
+        path: "",
+        element: (
+          <AdminRoute>
+            <DashboardPage />
+          </AdminRoute>
+        )
+      },
+      {
+        path: "lancamentos",
+        element: <LivroCaixaPage />
+      }, 
+      {
+        path: "configuracoes",
+        element: (
+          <AdminRoute>
+            <ConfiguracoesPage />
+          </AdminRoute>
+        )
+      },
     ],
   },
-
-
-
-
-
-
-
-
-
-
 
   // 3. Fallback (404)
   {

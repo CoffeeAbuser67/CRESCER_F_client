@@ -80,4 +80,20 @@ export const financeiroService = {
     const { data } = await api.post<Servico>("/financeiro/servicos", payload);
     return data;
   },
+
+
+
+
+
+  getDashboardResumo: async (startDate: string, endDate: string): Promise<any> => {
+    const { data } = await api.get('/financeiro/dashboard/resumo', {
+      params: { start_date: startDate, end_date: endDate }
+    });
+    return data;
+  },
+
+
+
+
+
 };
