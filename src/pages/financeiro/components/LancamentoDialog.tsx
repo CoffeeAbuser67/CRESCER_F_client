@@ -60,8 +60,9 @@ const formSchema = z
     metodo_pagamento: z.enum([
       "PIX",
       "DINHEIRO",
-      "CARTAO_CREDITO",
-      "CARTAO_DEBITO",
+      "CREDITO",
+      "DEBITO",
+      "CONVENIO",
     ]),
     servico_id: z.string().uuid("Selecione um serviço"),
     profissional_id: z.string().uuid("Selecione um profissional"),
@@ -345,8 +346,9 @@ export function LancamentoDialog({
                       <SelectContent position="popper" className="max-h-60">
                         <SelectItem value="PIX">PIX</SelectItem>
                         <SelectItem value="DINHEIRO">Dinheiro</SelectItem>
-                        <SelectItem value="CARTAO_CREDITO">Cartão Crédito</SelectItem>
-                        <SelectItem value="CARTAO_DEBITO">Cartão Débito</SelectItem>
+                        <SelectItem value="CREDITO">Cartão Crédito</SelectItem>
+                        <SelectItem value="DEBITO">Cartão Débito</SelectItem>
+                        <SelectItem value="CONVENIO">Convênio</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

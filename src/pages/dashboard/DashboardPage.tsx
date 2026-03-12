@@ -1,11 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
-import { DollarSign, Users, Activity, TrendingUp, Loader2, Trophy } from "lucide-react";
+import { DollarSign, Users, Activity, TrendingUp, Loader2, Stethoscope, Armchair } from "lucide-react";
+
+
 
 // Imports Recharts
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, AreaChart, Area, Brush
-} from "recharts";
+  PieChart, Pie, Cell, Legend, Brush
+} from "recharts"
 
 
 
@@ -15,16 +18,16 @@ import { SmartDateRangePicker } from "@/components/date-range-picker-aria";
 
 import { financeiroService } from "@/services/financeiroService";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/avatar";
 
 export default function DashboardPage() {
   const [dados, setDados] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Estado do DatePicker: Padrão são os últimos 30 dias até hoje
+  const hoje = today(getLocalTimeZone());
   const [dateRange, setDateRange] = useState({
-    start: today(getLocalTimeZone()).subtract({ days: 30 }),
-    end: today(getLocalTimeZone())
+    start: hoje.set({ day: 1 }), //dia 01 do mês corrente
+    end: hoje                    
   });
 
   useEffect(() => {
@@ -68,6 +71,37 @@ export default function DashboardPage() {
 
 
 
+  const CustomTooltip = ({ active, payload, label }: any) => { // ✪ CustomTooltip
+    if (active && payload && payload.length) {
+      // Faz o somatório das fatias empilhadas (Consulta + Terapia, etc)
+      const total = payload.reduce((sum: number, entry: any) => sum + entry.value, 0);
+
+      return (
+        <div className="bg-background border border-border p-3 rounded-lg shadow-xl">
+          {/* Label agora recebe a data completa (DD/MM/YYYY) do backend */}
+          <p className="font-semibold text-foreground mb-3">{label}</p>
+
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="flex items-center justify-between gap-6 text-sm mb-1.5">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }} />
+                <span className="text-muted-foreground">{entry.name}:</span>
+              </div>
+              <span className="font-medium text-foreground">{formatarMoeda(entry.value)}</span>
+            </div>
+          ))}
+
+          <div className="mt-3 pt-2 border-t border-border flex items-center justify-between text-sm font-bold text-foreground">
+            <span>Total do Dia:</span>
+            <span>{formatarMoeda(total)}</span>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+
   const kpis = dados?.kpis || {};
   const receitaData = dados?.graficos?.receita_por_categoria || [];
   const metodosData = dados?.graficos?.metodos_pagamento || [];
@@ -78,15 +112,17 @@ export default function DashboardPage() {
 
   // Dicionário de cores sólidas e contrastantes
   const CATEGORIA_COLORS: Record<string, string> = {
-    'CONSULTA': 'hsl(var(--primary))', // Azul/Roxo padrão do seu tema
-    'TERAPIA': '#47346a',              // Verde esmeralda sólido
+    'CONSULTA': 'hsl(var(--primary))', // PRETO padrão do seu tema
+    'TERAPIA': '#47346a',              // ROXO
     'Outros': '#f59e0b'                // Laranja caso caia algo fora do padrão
   };
 
-  const PIE_COLORS = ['hsl(var(--primary))', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+  const PIE_COLORS = ['hsl(var(--primary))', '#10b981', '#f59e0b', '#ef4444', '#47346a'];
 
-  return (
-    <div className="flex-1 space-y-6 p-8 pt-6">
+
+
+  return ( // ── ⋙────── DOM ──────────➤
+    <div className="flex-1 space-y-6 p-2 md:p-8 pt-6">
 
       {/* Cabeçalho */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0 pb-4">
@@ -107,78 +143,128 @@ export default function DashboardPage() {
       {/* Se estiver recarregando devido a troca de data, coloca uma opacidade na tela */}
       <div className={isLoading ? "opacity-50 pointer-events-none transition-opacity duration-200" : "transition-opacity duration-200"}>
 
+
         {/* Grid de KPIs */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-          <Card>
+
+
+          <Card // HERE Faturamento Bruto
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Faturamento Bruto</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatarMoeda(kpis.faturamento_total || 0)}</div>
-              <p className="text-xs text-muted-foreground">No período selecionado</p>
+            <CardContent className="overflow-hidden">
+              {/* truncate adiciona os '...' se bater na borda. title mostra o valor completo no hover */}
+              <div className="text-2xl font-bold truncate" title={formatarMoeda(kpis.faturamento_total || 0)}>
+                {formatarMoeda(kpis.faturamento_total || 0)}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">No período selecionado</p>
             </CardContent>
           </Card>
 
-          <Card>
+
+          <Card // HERE KPI Atendimentos
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Atendimentos</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{kpis.total_atendimentos || 0}</div>
-              <p className="text-xs text-muted-foreground">No período selecionado</p>
+
+              <div className="flex flex-col gap-1 mt-1.5 text-[11px] font-medium">
+
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="flex items-center"><Stethoscope className="mr-1 h-3 w-3" /> Consulta:</span>
+                  <span className="text-foreground">{kpis.atendimentos_consulta || 0}</span>
+                </div>
+
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="flex items-center"><Armchair className="mr-1 h-3 w-3" /> Terapia:</span>
+                  <span className="text-foreground">{kpis.atendimentos_terapia || 0}</span>
+                </div>
+
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
+
+          <Card // HERE KPI Ticket Médio
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
+              <CardTitle className="text-sm font-medium">Ticket Médio Geral</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatarMoeda(kpis.ticket_medio || 0)}</div>
-              <p className="text-xs text-muted-foreground">No período selecionado</p>
+            <CardContent className="overflow-hidden">
+              <div className="text-2xl font-bold truncate" title={formatarMoeda(kpis.ticket_medio || 0)}>
+                {formatarMoeda(kpis.ticket_medio || 0)}
+              </div>
+              {/* Lista compacta para mostrar os tickets separados */}
+              <div className="flex flex-col gap-1 mt-1.5 text-[11px] font-medium">
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="flex items-center"><Stethoscope className="mr-1 h-3 w-3" /> Consulta:</span>
+                  <span className="text-foreground">{formatarMoeda(kpis.ticket_medio_consulta || 0)}</span>
+                </div>
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="flex items-center"><Armchair className="mr-1 h-3 w-3" /> Terapia:</span>
+                  <span className="text-foreground">{formatarMoeda(kpis.ticket_medio_terapia || 0)}</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          <Card>
+
+          <Card // HERE KPI Pacientes Únicos
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pacientes Únicos</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{kpis.pacientes_unicos || 0}</div>
-              <p className="text-xs text-muted-foreground">No período selecionado</p>
+              <p className="text-xs text-muted-foreground mt-1">No período selecionado</p>
             </CardContent>
           </Card>
         </div>
 
 
 
-        {/* NOVA LINHA: Gráfico de Evolução Diária (Largura Total) */}
-        <div className="grid gap-4 grid-cols-1 mb-4">
-          <Card className="min-w-0">
+
+        <div // . . . . . . . . . . . . . . .  L2
+          className="grid gap-4 grid-cols-1 mb-4">
+          <Card // HERE Faturamento Diário
+            className="min-w-0">
             <CardHeader>
               <CardTitle>Faturamento Diário</CardTitle>
               <CardDescription>Evolução das entradas no período selecionado</CardDescription>
             </CardHeader>
             <CardContent className="pl-0">
+
+
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={faturamentoDiario} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                  <XAxis dataKey="data" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                  <XAxis
+                    dataKey="data"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => value.substring(0, 5)}
+                  />
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `R$ ${value}`} />
 
                   {/* Tooltip agora mostra o nome do médico em vez de "Faturamento" */}
-                  <RechartsTooltip
+
+                  <RechartsTooltip // ○ CustomTooltip
+                    content={<CustomTooltip />}
                     cursor={{ fill: 'hsl(var(--muted)/0.5)' }}
-                    formatter={(value: number, name: string) => [formatarMoeda(value), name]}
-                    contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--background))' }}
                   />
 
                   {/* Legenda no topo para sabermos qual cor é qual profissional */}
                   <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+
 
                   {/* Iteramos sobre os profissionais para criar as fatias empilhadas */}
                   {categoriasPeriodo.map((categoria: string) => (
@@ -203,30 +289,42 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* LINHA INFERIOR: 3 Colunas (Categoria, Métodos e Profissionais) */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 
-          {/* Coluna 1: Categoria */}
-          <Card className="min-w-0">
+        <div // . . . . . . . . . . . . . . .  L3
+          className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+
+
+          <Card // HERE  Por Categoria
+            className="min-w-0">
             <CardHeader>
               <CardTitle>Por Categoria</CardTitle>
-              <CardDescription>Consultas vs Terapias</CardDescription>
+              <CardDescription>Consultas & Terapias</CardDescription>
             </CardHeader>
-            <CardContent className="pl-0">
+            {/* Removemos o pl-0 e colocamos pb-4 para não colar embaixo */}
+            <CardContent className="pb-4 pr-4">
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={receitaData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                {/* Aumentamos a margem 'left' de -20 para 10 para dar espaço ao "R$" */}
+                <BarChart data={receitaData} margin={{ top: 12, right: 6, left: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                   <XAxis dataKey="categoria" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `R$ ${value}`} />
                   <RechartsTooltip cursor={{ fill: 'hsl(var(--muted)/0.5)' }} formatter={(value: number) => [formatarMoeda(value), "Faturamento"]} contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--background))' }} />
-                  <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                </BarChart>
+                  <Bar dataKey="total" radius={[4, 4, 0, 0]}>
+                    {receitaData.map((entry: any, index: number) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={CATEGORIA_COLORS[entry.categoria] || CATEGORIA_COLORS['Outros']}
+                      />
+                    ))}
+                  </Bar>                </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
 
-          {/* Coluna 2: Métodos de Pagamento */}
-          <Card className="min-w-0">
+
+
+          <Card // HERE  Métodos de Pagamento
+            className="min-w-0">
             <CardHeader>
               <CardTitle>Métodos de Pagamento</CardTitle>
               <CardDescription>Distribuição das entradas</CardDescription>
@@ -255,31 +353,41 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Coluna 3: Top Profissionais */}
-          <Card className="min-w-0 flex flex-col">
+
+          <Card // HERE  Rank Profissionais
+            className="min-w-0 flex flex-col">
             <CardHeader>
-              <CardTitle>Top Profissionais</CardTitle>
-              <CardDescription>Ranking de faturamento</CardDescription>
+              <CardTitle>Por Profissionais</CardTitle>
+              <CardDescription>Faturamento por profissional no período</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 overflow-auto max-h-[300px] pr-2">
-              <div className="space-y-4">
+            <CardContent className="flex-1 overflow-auto max-h-[300px] pr-6 pb-6">
+              {/* Aumentamos o espaçamento vertical entre os profissionais (space-y-5) */}
+              <div className="space-y-5">
                 {topProfissionais.map((prof: any, index: number) => (
-                  <div key={index} className="flex items-center">
-                    <Avatar className="h-8 w-8 border flex items-center justify-center font-bold text-xs shadow-sm bg-muted/50">
+                  // Mudamos de items-center para items-start
+                  <div key={index} className="flex items-start">
+
+                    {/* Adicionamos shrink-0 e um mt-0.5 para o avatar não ser esmagado e alinhar perfeitamente com o Nome */}
+                    <Avatar className="h-8 w-8 shrink-0 border flex items-center justify-center font-bold text-xs shadow-sm bg-muted/50 mt-0.5">
                       {index === 0 && <span className="text-yellow-500">1º</span>}
                       {index === 1 && <span className="text-gray-400">2º</span>}
                       {index === 2 && <span className="text-amber-600">3º</span>}
                       {index > 2 && <span className="text-muted-foreground">{index + 1}º</span>}
                     </Avatar>
-                    <div className="ml-3 space-y-0.5 overflow-hidden">
-                      <p className="text-sm font-medium leading-none truncate" title={prof.nome}>{prof.nome}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {prof.atendimentos} atend.
+
+                    {/* Empilhamento em coluna limpo e organizado */}
+                    <div className="ml-3 flex flex-col space-y-1.5 overflow-hidden">
+                      <p className="text-sm font-medium leading-none truncate" title={prof.nome}>
+                        {prof.nome}
+                      </p>
+                      <div className="font-semibold text-sm text-foreground">
+                        {formatarMoeda(prof.faturamento)}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-none">
+                        {prof.atendimentos} {prof.atendimentos === 1 ? 'atendimento' : 'atendimentos'}
                       </p>
                     </div>
-                    <div className="ml-auto font-medium text-sm whitespace-nowrap">
-                      {formatarMoeda(prof.faturamento)}
-                    </div>
+
                   </div>
                 ))}
 

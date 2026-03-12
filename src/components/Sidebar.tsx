@@ -21,7 +21,7 @@ export function Sidebar() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // 2. Estado do colapso da sidebar
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);

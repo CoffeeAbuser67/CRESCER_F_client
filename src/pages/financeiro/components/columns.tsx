@@ -1,7 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Lancamento } from "@/utils/types";
 import { Button } from "@/components/ui/button";
-import { ArrowUpDown, Trash2, Banknote, StickyNote, CreditCard } from "lucide-react";
+import { ArrowUpDown, Trash2, Banknote, StickyNote, CreditCard, HeartHandshake } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -18,9 +18,18 @@ const formatCurrency = (value: number) => {
 
 const getPaymentIcon = (method: string) => {
     switch (method) {
-        case 'PIX': return <div className="flex items-center gap-2"><span className="text-xs font-bold text-green-600">PIX</span></div>;
-        case 'DINHEIRO': return <div className="flex items-center gap-2"><Banknote className="h-4 w-4 text-green-700" /> <span className="text-xs">Dinheiro</span></div>;
-        default: return <div className="flex items-center gap-2"><CreditCard className="h-4 w-4 text-blue-600" /> <span className="text-xs">{method}</span></div>;
+        case 'PIX': 
+            return <div className="flex items-center gap-2"><span className="text-xs font-bold text-green-600">PIX</span></div>;
+        case 'DINHEIRO': 
+            return <div className="flex items-center gap-2"><Banknote className="h-4 w-4 text-green-700" /> <span className="text-xs">Dinheiro</span></div>;
+        case 'CREDITO': // Atualizado
+            return <div className="flex items-center gap-2"><CreditCard className="h-4 w-4 text-purple-700" /> <span className="text-xs">Crédito</span></div>;
+        case 'DEBITO': // Atualizado
+            return <div className="flex items-center gap-2"><CreditCard className="h-4 w-4 text-blue-700" /> <span className="text-xs">Débito</span></div>;
+        case 'CONVENIO': // Novo
+            return <div className="flex items-center gap-2"><HeartHandshake className="h-4 w-4 text-rose-500" /> <span className="text-xs">Convênio</span></div>;
+        default: 
+            return <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground">{method}</span></div>;
     }
 }
 

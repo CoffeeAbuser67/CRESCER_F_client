@@ -104,12 +104,12 @@ export function ServicosManager() {
     return (
         <div className="space-y-4">
             {/* Barra de Ações */}
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between gap-4 items-center">
                 <div className="text-sm text-muted-foreground">
                     Gerencie os serviços e defina como eles se comportam no Livro Caixa.
                 </div>
                 <Button onClick={() => setIsDialogOpen(true)} className="shadow-sm">
-                    <Plus className="mr-2 h-4 w-4" /> Cadastrar Serviço
+                    <Plus className="mr-2 h-4 w-4" />Serviço
                 </Button>
             </div>
 

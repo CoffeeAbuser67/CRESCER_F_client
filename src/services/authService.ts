@@ -18,4 +18,16 @@ export const authService = {
     const response = await api.post("/auth/register", data);
     return response.data;
   },
+
+  getUsuarios: async () => {
+    const response = await api.get('/auth/usuarios');
+    return response.data;
+  },
+
+  deleteUsuario: async (id: string) => {
+    const response = await api.delete(`/auth/usuarios/${id}`);
+    return response.data;
+  },  
+
 };
+

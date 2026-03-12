@@ -129,11 +129,11 @@ export default function LivroCaixaPage() {
     }
   };
 
-  // --- DADOS PARA A ABA CONSULTAS ---
+  // HERE --- DADOS PARA A ABA CONSULTAS ---
   const medicosDisponiveis = Array.from(
     new Map(
       lancamentos
-        .filter(l => l.profissional && l.servico.categoria === "CONSULTA")
+        .filter(l => l.profissional) // Qualquer lançamento que tenha um profissional associado
         .map(l => [l.profissional!.id, l.profissional!.nome])
     ).entries()
   ).map(([value, label]) => ({ value, label }));
@@ -143,7 +143,8 @@ export default function LivroCaixaPage() {
     : medicosDisponiveis;
 
 
-  // --- DADOS PARA A ABA TERAPIAS ---
+
+  // HERE --- DADOS PARA A ABA TERAPIAS ---
   const servicosDisponiveis = Array.from(
     new Map(
       lancamentos
@@ -152,13 +153,13 @@ export default function LivroCaixaPage() {
     ).entries()
   ).map(([value, label]) => ({ value, label }));
 
-  const servicosFiltrados = selectedServicos.length > 0
-    ? servicosDisponiveis.filter(s => selectedServicos.includes(s.value))
-    : servicosDisponiveis;
+  // const servicosFiltrados = selectedServicos.length > 0
+  //   ? servicosDisponiveis.filter(s => selectedServicos.includes(s.value))
+  //   : servicosDisponiveis;
 
 
-  return (
-    <div className="h-full flex-1 flex-col space-y-6 p-8 md:flex bg-background">
+  return ( // ── ⋙───── DOM───────────➤
+    <div className="h-full flex-1 flex-col space-y-6 p-2 md:p-8  md:flex bg-background">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Livro Caixa</h2>
@@ -212,13 +213,9 @@ export default function LivroCaixaPage() {
               </div>
             </div>
 
-
-
             <Button onClick={() => setIsDialogOpen(true)} className="w-full xl:w-auto shadow-md shrink-0">
               <Stethoscope className="mr-2 h-4 w-4" /> Nova Consulta
             </Button>
-
-
 
           </div>
 
@@ -265,6 +262,26 @@ export default function LivroCaixaPage() {
                 onChange={setRange}
               />
 
+
+
+              <div className="w-full sm:w-auto flex-1 max-w-xl flex items-center gap-2">
+                <MultiSelect
+                  options={medicosDisponiveis}
+                  selected={selectedMedicos}
+                  onChange={setSelectedMedicos}
+                  placeholder="Filtrar Profissionais..."
+                  className="bg-background"
+                />
+                {selectedMedicos.length > 0 && (
+                  <Button variant="ghost" size="icon" onClick={() => setSelectedMedicos([])}>
+                    <FilterX className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                )}
+              </div>
+
+
+
+
               {/* Filtro específico de Serviços */}
               <div className="w-full sm:w-auto flex-1 max-w-xl flex items-center gap-2">
                 <MultiSelect
@@ -309,18 +326,22 @@ export default function LivroCaixaPage() {
               <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
             ) : (
               <div className="grid gap-6">
-                {servicosFiltrados.map(servico => {
+                {/* Agora agrupamos por Médico, igual na aba de Consultas */}
+                {medicosFiltrados.map(medico => {
                   const dados = lancamentos.filter(l =>
-                    l.servico?.id === servico.value &&
-                    l.servico.categoria === TAB_TO_CATEGORY.terapias
+                    l.profissional?.id === medico.value &&
+                    l.servico.categoria === TAB_TO_CATEGORY.terapias &&
+                    // E aplicamos o filtro de serviço secundário (se houver algum selecionado)
+                    (selectedServicos.length === 0 || selectedServicos.includes(l.servico.id))
                   );
 
-                  if (dados.length === 0 && selectedServicos.length === 0) return null;
+                  // Se não sobrou nada, não desenha o card
+                  if (dados.length === 0) return null;
 
                   return (
                     <GroupTableCard
-                      key={servico.value}
-                      group={servico} // Passamos o serviço aqui!
+                      key={medico.value}
+                      group={medico} // O título do card agora é o nome do Médico
                       dados={dados}
                       onDeleteClick={setLancamentoToDelete}
                       globalSearch={globalPatientSearch}
@@ -328,7 +349,7 @@ export default function LivroCaixaPage() {
                   )
                 })}
 
-                {!isLoading && servicosFiltrados.length === 0 && (
+                {!isLoading && medicosFiltrados.length === 0 && (
                   <div className="text-center py-10 text-muted-foreground">Nenhum lançamento de Terapia encontrado no período.</div>
                 )}
               </div>
@@ -370,6 +391,9 @@ export default function LivroCaixaPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+
+      <div className="h-12 shrink-0 w-full block md:hidden" />
 
     </div>
   );

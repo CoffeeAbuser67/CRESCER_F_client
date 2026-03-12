@@ -1,26 +1,22 @@
+// *******************
+// MODIFIQUE AQUI!
+// *******************
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Stethoscope, ShieldCheck } from "lucide-react";
 import { ProfissionaisManager } from "./components/ProfissionaisManager";
 import { ServicosManager } from "./components/ServicosManager";
+import { Card, CardContent } from "@/components/ui/card"; // <- Importamos o Card para melhorar o visual
+import { UsuariosManager } from "./components/UsuariosManager";
 
 
-
-
-function UsuariosManager() {
-    return (
-        <div className="rounded-lg border border-dashed p-8 text-center bg-muted/10">
-            <h3 className="font-semibold text-lg text-muted-foreground">Módulo de Usuários</h3>
-            <p className="text-sm text-muted-foreground">Tabela e controle de acessos entrarão aqui.</p>
-        </div>
-    );
-}
 
 export default function ConfiguracoesPage() {
     const [activeTab, setActiveTab] = useState("operacional");
 
     return (
-        <div className="h-full flex-1 flex-col space-y-6 p-8 md:flex bg-background">
+        // 1. Padding responsivo (p-4 mobile, p-8 desktop)
+        <div className="h-full flex-1 flex-col space-y-6 p-2 md:p-8 bg-background overflow-y-auto">
 
             {/* Cabeçalho da Página */}
             <div className="flex items-center justify-between">
@@ -35,16 +31,17 @@ export default function ConfiguracoesPage() {
 
                 {/* Navegação das Abas */}
                 <div className="border-b pb-0">
-                    <TabsList className="bg-transparent h-auto p-0 gap-6">
+                    {/* Adicionado overflow-x-auto para evitar quebra no mobile */}
+                    <TabsList className="bg-transparent h-auto p-0 gap-2 md:gap-6 flex flex-wrap md:flex-nowrap justify-start">
                         <TabsTrigger
                             value="operacional"
-                            className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-base"
+                            className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-sm md:text-base flex-1 md:flex-none justify-center"
                         >
                             <Stethoscope className="mr-2 h-4 w-4" /> Operacional da Clínica
                         </TabsTrigger>
                         <TabsTrigger
                             value="acessos"
-                            className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-base"
+                            className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-sm md:text-base flex-1 md:flex-none justify-center"
                         >
                             <ShieldCheck className="mr-2 h-4 w-4" /> Acessos e Usuários
                         </TabsTrigger>
@@ -54,29 +51,37 @@ export default function ConfiguracoesPage() {
                 {/* ABA 1: Operacional (Profissionais + Serviços empilhados) */}
                 <TabsContent value="operacional" className="space-y-8 focus-visible:outline-none">
                     <div className="flex flex-col gap-8">
-                        <section>
-                            <h3 className="text-lg font-medium mb-4">Profissionais de Saúde</h3>
+                        {/* 2. Envolvendo as sessões em Cards */}
+                        <Card className="shadow-sm border-muted">
+                            <CardContent className="p-6">
+                                <h3 className="text-lg font-medium mb-4">Profissionais de Saúde</h3>
+                                <ProfissionaisManager />
+                            </CardContent>
+                        </Card>
 
-                            <ProfissionaisManager />
-
-                        </section>
-
-                        <section>
-                            <h3 className="text-lg font-medium mb-4">Catálogo de Serviços</h3>
-                            <ServicosManager />
-                        </section>
+                        <Card className="shadow-sm border-muted">
+                            <CardContent className="p-6">
+                                <h3 className="text-lg font-medium mb-4">Catálogo de Serviços</h3>
+                                <ServicosManager />
+                            </CardContent>
+                        </Card>
                     </div>
                 </TabsContent>
 
                 {/* ABA 2: Usuários */}
                 <TabsContent value="acessos" className="focus-visible:outline-none">
-                    <section>
-                        <h3 className="text-lg font-medium mb-4">Controle de Usuários</h3>
-                        <UsuariosManager />
-                    </section>
+                    <Card className="shadow-sm border-muted">
+                        <CardContent className="p-6">
+                            <h3 className="text-lg font-medium mb-4">Controle de Usuários</h3>
+                            <UsuariosManager />
+                        </CardContent>
+                    </Card>
                 </TabsContent>
 
             </Tabs>
+
+            {/* 3. O "Calço" Mobile para garantir respiro no final da página */}
+            <div className="h-12 shrink-0 w-full block md:hidden" />
 
         </div>
     );
