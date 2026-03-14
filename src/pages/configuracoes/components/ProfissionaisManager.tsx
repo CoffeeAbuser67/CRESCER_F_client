@@ -116,22 +116,22 @@ export function ProfissionaisManager() {
     };
 
 
-    // --- Função: Alternar Status (Soft Delete) ---
-    const handleToggleStatus = async (id: string, currentStatus: boolean) => {
-        // Atualização Otimista: Muda na tela antes do servidor responder para parecer instantâneo
-        setProfissionais((prev) =>
-            prev.map((p) => (p.id === id ? { ...p, ativo: !currentStatus } : p))
-        );
+    // // --- Função: Alternar Status (Soft Delete) ---
+    // const handleToggleStatus = async (id: string, currentStatus: boolean) => {
+    //     // Atualização Otimista: Muda na tela antes do servidor responder para parecer instantâneo
+    //     setProfissionais((prev) =>
+    //         prev.map((p) => (p.id === id ? { ...p, ativo: !currentStatus } : p))
+    //     );
 
-        try {
-            await financeiroService.toggleProfissionalStatus(id);
-            toast.success(currentStatus ? "Profissional inativado." : "Profissional reativado.");
-        } catch (error) {
-            // Se falhar no servidor, reverte a tela para o estado original
-            toast.error("Erro ao atualizar status.");
-            carregarProfissionais();
-        }
-    };
+    //     try {
+    //         await financeiroService.toggleProfissionalStatus(id);
+    //         toast.success(currentStatus ? "Profissional inativado." : "Profissional reativado.");
+    //     } catch (error) {
+    //         // Se falhar no servidor, reverte a tela para o estado original
+    //         toast.error("Erro ao atualizar status.");
+    //         carregarProfissionais();
+    //     }
+    // };
 
     return (
         <div className="space-y-4">

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, FilterX, Stethoscope, Armchair, Loader2 } from "lucide-react";
+import { FilterX, Stethoscope, Armchair, Loader2 } from "lucide-react";
 
 import { DataTable } from "@/components/data-table";
 import { getColumns } from "./components/columns";
@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "react-toastify";
 import { Input } from "@/components/ui/input";
+import { useUserStore } from "@/store/userStore";
 
 const TAB_TO_CATEGORY: Record<string, string> = {
   consultas: "CONSULTA",
@@ -35,37 +36,42 @@ const TAB_TO_CATEGORY: Record<string, string> = {
 
 
 function GroupTableCard({
-  group, // Pode ser um Médico ou um Serviço
+  group,
   dados,
   onDeleteClick,
   globalSearch,
+  isAdmin,
+  mostrarServico,
 }: {
   group: { label: string; value: string };
   dados: Lancamento[];
   onDeleteClick: (id: string) => void;
   globalSearch: string;
+  isAdmin: boolean;
+  mostrarServico?: boolean;
 }) {
   const total = dados.reduce((acc, curr) => acc + Number(curr.valor || 0), 0);
-  const memoizedColumns = useMemo(() => getColumns(onDeleteClick), [onDeleteClick]);
+
+  // Atualiza o useMemo para repassar o 'mostrarServico'
+  const memoizedColumns = useMemo(() => getColumns(onDeleteClick, mostrarServico), [onDeleteClick, mostrarServico]);
 
   return (
     <Card className="overflow-hidden shadow-sm border transition-colors">
       <CardHeader className="bg-muted/10 py-3 flex flex-col items-start justify-between border-b gap-3">
         <div className="w-full flex items-center justify-between">
           <CardTitle className="text-lg font-semibold">{group.label}</CardTitle>
-          <span className="text-sm font-medium text-muted-foreground">
-            Total: <span className="font-bold text-foreground">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(total)}</span>
-          </span>
+
+          {/* Renderização condicional: Oculta a grana do cabeçalho se não for ADMIN */}
+          {isAdmin && (
+            <span className="text-sm font-medium text-muted-foreground">
+              Total: <span className="font-bold text-foreground">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(total)}</span>
+            </span>
+          )}
+
         </div>
       </CardHeader>
-
       <CardContent className="p-0">
-        <DataTable
-          columns={memoizedColumns}
-          data={dados}
-          searchKey="paciente"
-          searchValue={globalSearch}
-        />
+        <DataTable columns={memoizedColumns} data={dados} searchKey="paciente" searchValue={globalSearch} />
       </CardContent>
     </Card>
   );
@@ -85,6 +91,9 @@ export default function LivroCaixaPage() {
 
   const [lancamentoToDelete, setLancamentoToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const { user } = useUserStore();
+  const isAdmin = user?.role === 'ADMIN';
 
   // Período
   const [range, setRange] = useState({
@@ -239,6 +248,9 @@ export default function LivroCaixaPage() {
                       dados={dados}
                       onDeleteClick={setLancamentoToDelete}
                       globalSearch={globalPatientSearch}
+                      isAdmin={isAdmin}          // <- Passamos a flag
+                      mostrarServico={false}     // <- Não exibe na aba de Consultas
+
                     />
                   )
                 })}
@@ -345,6 +357,9 @@ export default function LivroCaixaPage() {
                       dados={dados}
                       onDeleteClick={setLancamentoToDelete}
                       globalSearch={globalPatientSearch}
+                      isAdmin={isAdmin}         
+                      mostrarServico={true}      
+
                     />
                   )
                 })}
