@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Plus, Loader2, Stethoscope, Armchair } from "lucide-react";
+import { Plus, Loader2, Stethoscope, Armchair, Microscope, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 
 import { financeiroService } from "@/services/financeiroService";
@@ -27,6 +27,18 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog";
+
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 import {
     Form,
     FormControl,
@@ -47,7 +59,7 @@ import { Badge } from "@/components/ui/badge";
 // O Schema reflete o seu Enum do Backend
 const formSchema = z.object({
     nome: z.string().min(3, "O nome deve ter no mínimo 3 caracteres"),
-    categoria: z.enum(["CONSULTA", "TERAPIA"], {
+    categoria: z.enum(["CONSULTA", "TERAPIA", "EXAME"], {
         message: "Selecione uma categoria",
     }),
 });
@@ -57,6 +69,9 @@ export function ServicosManager() {
     const [isLoading, setIsLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+
+    const [servicoToDelete, setServicoToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const form = useForm({
         resolver: zodResolver(formSchema) as any,
@@ -101,6 +116,26 @@ export function ServicosManager() {
         }
     };
 
+    const handleDeleteConfirm = async () => {
+        if (!servicoToDelete) return;
+        setIsDeleting(true);
+
+        // Remove da lista localmente na hora
+        setServicos((prev) => prev.filter((s) => s.id !== servicoToDelete));
+
+        try {
+            await financeiroService.deleteServico(servicoToDelete);
+            toast.success("Serviço inativado com sucesso!");
+        } catch (error) {
+            console.error("Erro ao excluir serviço:", error);
+            toast.error("Erro ao remover o serviço.");
+            carregarServicos(); // Reverte a tela se der erro
+        } finally {
+            setIsDeleting(false);
+            setServicoToDelete(null);
+        }
+    };
+
     return (
         <div className="space-y-4">
             {/* Barra de Ações */}
@@ -119,9 +154,11 @@ export function ServicosManager() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Nome do Serviço</TableHead>
-                            <TableHead className="w-[200px]">Categoria</TableHead>
+                            <TableHead>Categoria</TableHead>
+                            <TableHead className="text-right">Ações</TableHead>
                         </TableRow>
                     </TableHeader>
+
                     <TableBody>
                         {isLoading ? (
                             <TableRow>
@@ -144,22 +181,41 @@ export function ServicosManager() {
                                             <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-200 gap-1">
                                                 <Stethoscope className="h-3 w-3" /> Consulta
                                             </Badge>
-                                        ) : (
+                                        ) : servico.categoria === "TERAPIA" ? (
                                             <Badge variant="outline" className="bg-indigo-500/10 text-indigo-600 border-indigo-200 gap-1">
                                                 <Armchair className="h-3 w-3" /> Terapia
                                             </Badge>
+                                        ) : (
+                                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-200 gap-1">
+                                                <Microscope className="h-3 w-3" /> Exame
+                                            </Badge>
                                         )}
                                     </TableCell>
+
+                                    <TableCell className="text-right">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                            onClick={() => setServicoToDelete(servico.id)}
+                                            title="Remover Serviço"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
+
                                 </TableRow>
                             ))
                         )}
                     </TableBody>
+
+
                 </Table>
             </div>
 
             {/* Modal de Criação */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-106.25">
                     <DialogHeader>
                         <DialogTitle>Novo Serviço</DialogTitle>
                     </DialogHeader>
@@ -194,7 +250,8 @@ export function ServicosManager() {
                                             </FormControl>
                                             <SelectContent>
                                                 <SelectItem value="CONSULTA">Consulta Médica</SelectItem>
-                                                <SelectItem value="TERAPIA">Terapia / Sessão</SelectItem>
+                                                <SelectItem value="TERAPIA">Terapia</SelectItem>
+                                                <SelectItem value="EXAME">Exame</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -214,6 +271,32 @@ export function ServicosManager() {
                     </Form>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog open={!!servicoToDelete} onOpenChange={(open) => !open && setServicoToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Remover Serviço?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Isso removerá o serviço do catálogo para novos lançamentos. Todo o histórico financeiro existente continuará intacto.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleDeleteConfirm();
+                            }}
+                            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Remover
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
         </div>
     );
 }

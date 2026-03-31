@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
@@ -28,6 +29,16 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
     Form,
     FormControl,
@@ -60,6 +71,9 @@ export function UsuariosManager() {
     const [isLoading, setIsLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+
+    const [usuarioToDelete, setUsuarioToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const form = useForm({
         resolver: zodResolver(formSchema) as any,
@@ -104,17 +118,23 @@ export function UsuariosManager() {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        setUsuarios((prev) => prev.filter((u) => String(u.id) !== id));
+    const handleDeleteConfirm = async () => {
+        if (!usuarioToDelete) return;
+        setIsDeleting(true);
+        setUsuarios((prev) => prev.filter((u) => String(u.id) !== usuarioToDelete));
+        
         try {
-            // Essa função precisará ser criada no authService batendo no DELETE /auth/usuarios/{id}
-            await authService.deleteUsuario(id);
+            await authService.deleteUsuario(usuarioToDelete);
             toast.success("Usuário removido do sistema.");
         } catch (error) {
             toast.error("Erro ao remover usuário.");
-            carregarUsuarios(); // Reverte a exclusão otimista em caso de erro
+            carregarUsuarios(); 
+        } finally {
+            setIsDeleting(false);
+            setUsuarioToDelete(null);
         }
     };
+
 
     return (
         <div className="space-y-4">
@@ -172,7 +192,7 @@ export function UsuariosManager() {
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            onClick={() => handleDelete(String(user.id))}
+                                            onClick={() => setUsuarioToDelete(String(user.id))} // <- Abre o modal!
                                             className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                             title="Remover Usuário"
                                         >
@@ -271,6 +291,33 @@ export function UsuariosManager() {
                     </Form>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog open={!!usuarioToDelete} onOpenChange={(open) => !open && setUsuarioToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir Usuário?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta ação removerá permanentemente o acesso deste usuário ao sistema. 
+                            Tem certeza que deseja prosseguir?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleDeleteConfirm();
+                            }}
+                            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Excluir
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
         </div>
     );
 }

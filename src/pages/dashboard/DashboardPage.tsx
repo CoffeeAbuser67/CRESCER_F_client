@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
-import { DollarSign, Users, Activity, TrendingUp, Loader2, Stethoscope, Armchair } from "lucide-react";
+import { DollarSign, Users, Activity, TrendingUp, Loader2, Stethoscope, Armchair, Microscope } from "lucide-react";
 
 
 
@@ -27,7 +27,7 @@ export default function DashboardPage() {
   const hoje = today(getLocalTimeZone());
   const [dateRange, setDateRange] = useState({
     start: hoje.set({ day: 1 }), //dia 01 do mês corrente
-    end: hoje                    
+    end: hoje
   });
 
   useEffect(() => {
@@ -114,11 +114,22 @@ export default function DashboardPage() {
   const CATEGORIA_COLORS: Record<string, string> = {
     'CONSULTA': 'hsl(var(--primary))', // PRETO padrão do seu tema
     'TERAPIA': '#47346a',              // ROXO
+    'EXAME': '#059669',                // VERDE (Emerald 600)
     'Outros': '#f59e0b'                // Laranja caso caia algo fora do padrão
   };
 
-  const PIE_COLORS = ['hsl(var(--primary))', '#10b981', '#f59e0b', '#ef4444', '#47346a'];
+  const METODO_COLORS: Record<string, string> = {
+    'PIX': '#10b981',        // Verde esmeralda
+    'DINHEIRO': '#22c55e',   // Verde clássico
+    'CREDITO': '#8b5cf6',    // Roxo
+    'DEBITO': '#3b82f6',     // Azul
+    'CONVENIO': '#f43f5e',   // Rosa/Vermelho
+    'CORTESIA': '#f59e0b',   // Dourado/Âmbar (Combina com o ícone Gift)
+    'Outros': '#94a3b8'      // Cinza neutro
+  };
 
+
+  // const PIE_COLORS = ['hsl(var(--primary))', '#10b981', '#f59e0b', '#ef4444', '#47346a'];
 
 
   return ( // ── ⋙────── DOM ──────────➤
@@ -176,13 +187,19 @@ export default function DashboardPage() {
               <div className="flex flex-col gap-1 mt-1.5 text-[11px] font-medium">
 
                 <div className="flex items-center justify-between text-muted-foreground">
-                  <span className="flex items-center"><Stethoscope className="mr-1 h-3 w-3" /> Consulta:</span>
+                  <span className="flex items-center"><Stethoscope className="mr-1 h-3 w-3" /> Consultas:</span>
                   <span className="text-foreground">{kpis.atendimentos_consulta || 0}</span>
                 </div>
 
                 <div className="flex items-center justify-between text-muted-foreground">
-                  <span className="flex items-center"><Armchair className="mr-1 h-3 w-3" /> Terapia:</span>
+                  <span className="flex items-center"><Armchair className="mr-1 h-3 w-3" /> Terapias:</span>
                   <span className="text-foreground">{kpis.atendimentos_terapia || 0}</span>
+                </div>
+
+
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="flex items-center"><Microscope className="mr-1 h-3 w-3" /> Exames:</span>
+                  <span className="text-foreground">{kpis.atendimentos_exame || 0}</span>
                 </div>
 
               </div>
@@ -200,16 +217,25 @@ export default function DashboardPage() {
               <div className="text-2xl font-bold truncate" title={formatarMoeda(kpis.ticket_medio || 0)}>
                 {formatarMoeda(kpis.ticket_medio || 0)}
               </div>
-              {/* Lista compacta para mostrar os tickets separados */}
+
               <div className="flex flex-col gap-1 mt-1.5 text-[11px] font-medium">
+
                 <div className="flex items-center justify-between text-muted-foreground">
-                  <span className="flex items-center"><Stethoscope className="mr-1 h-3 w-3" /> Consulta:</span>
+                  <span className="flex items-center"><Stethoscope className="mr-1 h-3 w-3" /> Consultas:</span>
                   <span className="text-foreground">{formatarMoeda(kpis.ticket_medio_consulta || 0)}</span>
                 </div>
+
                 <div className="flex items-center justify-between text-muted-foreground">
-                  <span className="flex items-center"><Armchair className="mr-1 h-3 w-3" /> Terapia:</span>
+                  <span className="flex items-center"><Armchair className="mr-1 h-3 w-3" /> Terapias:</span>
                   <span className="text-foreground">{formatarMoeda(kpis.ticket_medio_terapia || 0)}</span>
                 </div>
+
+                <div className="flex items-center justify-between text-muted-foreground">
+                  <span className="flex items-center"><Microscope className="mr-1 h-3 w-3" /> Exames:</span>
+                  <span className="text-foreground">{formatarMoeda(kpis.ticket_medio_exame || 0)}</span>
+                </div>
+
+
               </div>
             </CardContent>
           </Card>
@@ -342,9 +368,15 @@ export default function DashboardPage() {
                     dataKey="total"
                     nameKey="metodo"
                   >
-                    {metodosData.map((_entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+
+                    {metodosData.map((entry: any, index: number) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={METODO_COLORS[entry.metodo] || METODO_COLORS['Outros']}
+                      />
                     ))}
+
+
                   </Pie>
                   <RechartsTooltip formatter={(value: number) => formatarMoeda(value)} contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--background))' }} />
                   <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
@@ -360,7 +392,7 @@ export default function DashboardPage() {
               <CardTitle>Por Profissionais</CardTitle>
               <CardDescription>Faturamento por profissional no período</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 overflow-auto max-h-[300px] pr-6 pb-6">
+            <CardContent className="flex-1 overflow-auto max-h-75 pr-6 pb-6">
               {/* Aumentamos o espaçamento vertical entre os profissionais (space-y-5) */}
               <div className="space-y-5">
                 {topProfissionais.map((prof: any, index: number) => (

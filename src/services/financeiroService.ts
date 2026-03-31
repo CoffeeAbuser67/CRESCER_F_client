@@ -81,13 +81,17 @@ export const financeiroService = {
     return data;
   },
 
+  deleteServico: async (id: string): Promise<void> => {
+    await api.delete(`/financeiro/servicos/${id}`);
+  },
 
-  getDashboardResumo: async (startDate: string, endDate: string): Promise<any> => {
-    const { data } = await api.get('/financeiro/dashboard/resumo', {
-      params: { start_date: startDate, end_date: endDate }
+  getDashboardResumo: async (
+    startDate: string,
+    endDate: string,
+  ): Promise<any> => {
+    const { data } = await api.get("/financeiro/dashboard/resumo", {
+      params: { start_date: startDate, end_date: endDate },
     });
     return data;
   },
-
-
 };

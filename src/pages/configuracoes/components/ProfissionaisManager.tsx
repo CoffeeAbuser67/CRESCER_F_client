@@ -28,6 +28,19 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog";
+
+
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 import {
     Form,
     FormControl,
@@ -51,6 +64,12 @@ export function ProfissionaisManager() {
     const [isLoading, setIsLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+
+
+    const [profissionalToDelete, setProfissionalToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+
 
     const form = useForm<ProfissionalFormValues>({
         resolver: zodResolver(formSchema) as any,
@@ -100,18 +119,21 @@ export function ProfissionaisManager() {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        // Atualização Otimista: Remove o profissional da tela na hora
-        setProfissionais((prev) => prev.filter((p) => p.id !== id));
+    const handleDeleteConfirm = async () => {
+        if (!profissionalToDelete) return;
+        setIsDeleting(true);
+
+        setProfissionais((prev) => prev.filter((p) => p.id !== profissionalToDelete));
 
         try {
-            // Como ele estava ativo, o toggle inverte para falso (Inativo = Soft Delete)
-            await financeiroService.toggleProfissionalStatus(id);
+            await financeiroService.toggleProfissionalStatus(profissionalToDelete);
             toast.success("Profissional removido com sucesso.");
         } catch (error) {
-            // Se falhar, recarrega a lista para mostrar ele de volta
             toast.error("Erro ao remover profissional.");
             carregarProfissionais();
+        } finally {
+            setIsDeleting(false);
+            setProfissionalToDelete(null);
         }
     };
 
@@ -191,19 +213,21 @@ export function ProfissionaisManager() {
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            onClick={() => handleDelete(prof.id)}
+                                            onClick={() => setProfissionalToDelete(prof.id)}
                                             className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                             title="Remover Profissional"
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </TableCell>
+
                                 </TableRow>
                             ))
                         )}
                     </TableBody>
                 </Table>
             </div>
+
 
             {/* Modal de Criação */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -300,6 +324,33 @@ export function ProfissionaisManager() {
                     </Form>
                 </DialogContent>
             </Dialog>
+
+
+            <AlertDialog open={!!profissionalToDelete} onOpenChange={(open) => !open && setProfissionalToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Remover Profissional?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Isso removerá o profissional das opções de novos atendimentos. Todo o histórico financeiro ligado a ele será mantido.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleDeleteConfirm();
+                            }}
+                            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                            disabled={isDeleting}
+                        >
+                            {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Excluir
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
         </div>
     );
 }

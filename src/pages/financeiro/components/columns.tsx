@@ -1,7 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Lancamento } from "@/utils/types";
 import { Button } from "@/components/ui/button";
-import { ArrowUpDown, Trash2, Banknote, StickyNote, CreditCard, HeartHandshake } from "lucide-react";
+import { ArrowUpDown, Trash2, Banknote, StickyNote, CreditCard, HeartHandshake, Gift } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +28,9 @@ const getPaymentIcon = (method: string) => {
             return <div className="flex items-center gap-2"><CreditCard className="h-4 w-4 text-blue-700" /> <span className="text-xs">Débito</span></div>;
         case 'CONVENIO': // Novo
             return <div className="flex items-center gap-2"><HeartHandshake className="h-4 w-4 text-rose-500" /> <span className="text-xs">Convênio</span></div>;
+        case 'CORTESIA': 
+            return <div className="flex items-center gap-2"><Gift className="h-4 w-4 text-amber-500" /> <span className="text-xs">Cortesia</span></div>;
+
         default:
             return <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground">{method}</span></div>;
     }
@@ -35,8 +38,10 @@ const getPaymentIcon = (method: string) => {
 
 export const getColumns = (
     onDeleteClick: (id: string) => void,
-    mostrarServico: boolean = false
+    mostrarServico: boolean = false,
+    mostrarProfissional: boolean = false // <-- NOVO PARÂMETRO
 ): ColumnDef<Lancamento>[] => {
+
 
     // 1. Colunas Iniciais (Paciente e Datas)
     const colunasBase: ColumnDef<Lancamento>[] = [
@@ -85,7 +90,7 @@ export const getColumns = (
         }
     ];
 
-    // 2. Coluna Condicional (Serviço)
+    // HERE Coluna Condicional (Serviço)
     if (mostrarServico) {
         colunasBase.push({
             id: "servico",
@@ -95,7 +100,20 @@ export const getColumns = (
         });
     }
 
-    // 3. Colunas Finais (Pagamento, Valor, Ações)
+    // HERE Coluna Condicional (Profissional)
+    if (mostrarProfissional) {
+        colunasBase.push({
+            id: "profissional",
+            accessorFn: (row) => row.profissional?.nome || "-",
+            header: "Profissional",
+            cell: ({ row }) => <span className="text-muted-foreground text-xs">{row.getValue("profissional") as string}</span>
+        });
+    }
+
+
+
+
+    // HERE Colunas Finais (Pagamento, Valor, Ações)
     colunasBase.push(
         {
             accessorKey: "metodo_pagamento",

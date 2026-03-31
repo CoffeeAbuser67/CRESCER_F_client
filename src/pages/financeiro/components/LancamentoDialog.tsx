@@ -56,13 +56,14 @@ const formSchema = z
   .object({
     data_pagamento: z.string().min(1, "Obrigatório"),
     data_competencia: z.string().min(1, "Obrigatório"),
-    valor: z.coerce.number().min(0.01, "Valor deve ser maior que zero"),
+    valor: z.coerce.number().min(0, "O valor não pode ser negativo"),
     metodo_pagamento: z.enum([
       "PIX",
       "DINHEIRO",
       "CREDITO",
       "DEBITO",
       "CONVENIO",
+      "CORTESIA",
     ]),
     servico_id: z.string().uuid("Selecione um serviço"),
     profissional_id: z.string().uuid("Selecione um profissional"),
@@ -109,6 +110,16 @@ export function LancamentoDialog({
   });
 
 
+  const currentMetodo = form.watch("metodo_pagamento");
+
+  useEffect(() => {
+    if (currentMetodo === "CORTESIA") {
+      form.setValue("valor", 0);
+      form.clearErrors("valor");
+    }
+  }, [currentMetodo, form]);
+
+
   useEffect(() => {
     if (open) {
       // 1. Carrega os dados básicos
@@ -148,7 +159,7 @@ export function LancamentoDialog({
       <DialogContent className="sm:max-w-106.25">
         <DialogHeader>
           <DialogTitle>
-            {categoriaFilter === "CONSULTA" ? "Nova Consulta" : "Nova Terapia"}
+            {categoriaFilter === "CONSULTA" ? "Nova Consulta" : categoriaFilter === "TERAPIA" ? "Nova Terapia" : "Novo Exame"}
           </DialogTitle>
         </DialogHeader>
 
@@ -324,6 +335,7 @@ export function LancamentoDialog({
                         step="0.01"
                         {...field}
                         onChange={field.onChange}
+                        disabled={currentMetodo === "CORTESIA"}
                       />
                     </FormControl>
                     <FormMessage />
@@ -337,7 +349,7 @@ export function LancamentoDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Pagamento</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Método" />
@@ -349,6 +361,7 @@ export function LancamentoDialog({
                         <SelectItem value="CREDITO">Cartão Crédito</SelectItem>
                         <SelectItem value="DEBITO">Cartão Débito</SelectItem>
                         <SelectItem value="CONVENIO">Convênio</SelectItem>
+                        <SelectItem value="CORTESIA">Cortesia</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -382,7 +395,10 @@ export function LancamentoDialog({
 
               <Button
                 type="submit"
-                className={categoriaFilter === "TERAPIA" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : ""}
+                className={
+                  categoriaFilter === "TERAPIA" ? "bg-indigo-600 hover:bg-indigo-700 text-white" :
+                    categoriaFilter === "EXAME" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""
+                }
               >
                 Salvar
               </Button>

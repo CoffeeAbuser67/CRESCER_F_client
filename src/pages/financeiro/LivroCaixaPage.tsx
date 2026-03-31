@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { FilterX, Stethoscope, Armchair, Loader2 } from "lucide-react";
+import { FilterX, Stethoscope, Armchair, Loader2, Microscope } from "lucide-react";
 
 import { DataTable } from "@/components/data-table";
 import { getColumns } from "./components/columns";
@@ -32,6 +32,7 @@ import { useUserStore } from "@/store/userStore";
 const TAB_TO_CATEGORY: Record<string, string> = {
   consultas: "CONSULTA",
   terapias: "TERAPIA",
+  exames: "EXAME",
 };
 
 
@@ -42,6 +43,7 @@ function GroupTableCard({
   globalSearch,
   isAdmin,
   mostrarServico,
+  mostrarProfissional,
 }: {
   group: { label: string; value: string };
   dados: Lancamento[];
@@ -49,11 +51,10 @@ function GroupTableCard({
   globalSearch: string;
   isAdmin: boolean;
   mostrarServico?: boolean;
+  mostrarProfissional?: boolean;
 }) {
   const total = dados.reduce((acc, curr) => acc + Number(curr.valor || 0), 0);
-
-  // Atualiza o useMemo para repassar o 'mostrarServico'
-  const memoizedColumns = useMemo(() => getColumns(onDeleteClick, mostrarServico), [onDeleteClick, mostrarServico]);
+  const memoizedColumns = useMemo(() => getColumns(onDeleteClick, mostrarServico, mostrarProfissional), [onDeleteClick, mostrarServico, mostrarProfissional]);
 
   return (
     <Card className="overflow-hidden shadow-sm border transition-colors">
@@ -85,8 +86,10 @@ export default function LivroCaixaPage() {
 
   // Estados de Filtro
   const [selectedMedicos, setSelectedMedicos] = useState<string[]>([]);
+  const [selectedServicos, setSelectedServicos] = useState<string[]>([]);
+  const [selectedExames, setSelectedExames] = useState<string[]>([]);
 
-  const [selectedServicos, setSelectedServicos] = useState<string[]>([]); // Novo estado para Terapias
+
   const [globalPatientSearch, setGlobalPatientSearch] = useState("");
 
   const [lancamentoToDelete, setLancamentoToDelete] = useState<string | null>(null);
@@ -167,6 +170,24 @@ export default function LivroCaixaPage() {
   //   : servicosDisponiveis;
 
 
+
+
+  // HERE --- DADOS PARA A ABA EXAMES ---
+  const examesDisponiveis = Array.from(
+    new Map(
+      lancamentos
+        .filter(l => l.servico && l.servico.categoria === "EXAME")
+        .map(l => [l.servico.id, l.servico.nome])
+    ).entries()
+  ).map(([value, label]) => ({ value, label }));
+
+
+  const examesFiltrados = selectedExames.length > 0
+    ? examesDisponiveis.filter(e => selectedExames.includes(e.value))
+    : examesDisponiveis;
+
+
+
   return ( // ── ⋙───── DOM───────────➤
     <div className="h-full flex-1 flex-col space-y-6 p-2 md:p-8  md:flex bg-background">
       <div className="flex items-center justify-between">
@@ -182,8 +203,13 @@ export default function LivroCaixaPage() {
             <TabsTrigger value="consultas" className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-base">
               <Stethoscope className="mr-2 h-4 w-4" /> Consultas
             </TabsTrigger>
+
             <TabsTrigger value="terapias" className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-base">
               <Armchair className="mr-2 h-4 w-4" /> Terapias
+            </TabsTrigger>
+
+            <TabsTrigger value="exames" className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none text-base">
+              <Microscope className="mr-2 h-4 w-4" /> Exames
             </TabsTrigger>
           </TabsList>
         </div>
@@ -357,8 +383,8 @@ export default function LivroCaixaPage() {
                       dados={dados}
                       onDeleteClick={setLancamentoToDelete}
                       globalSearch={globalPatientSearch}
-                      isAdmin={isAdmin}         
-                      mostrarServico={true}      
+                      isAdmin={isAdmin}
+                      mostrarServico={true}
 
                     />
                   )
@@ -366,6 +392,102 @@ export default function LivroCaixaPage() {
 
                 {!isLoading && medicosFiltrados.length === 0 && (
                   <div className="text-center py-10 text-muted-foreground">Nenhum lançamento de Terapia encontrado no período.</div>
+                )}
+              </div>
+            )
+          }
+        </TabsContent>
+
+
+        <TabsContent value="exames" className="space-y-6">
+          <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between bg-muted/20 p-4 rounded-lg border">
+            <div className="flex flex-col sm:flex-row flex-1 w-full gap-4 items-center flex-wrap">
+
+              <SmartDateRangePicker value={range} onChange={setRange} />
+
+              <div className="w-full sm:w-auto flex-1 max-w-xl flex items-center gap-2">
+                <MultiSelect
+                  options={medicosDisponiveis}
+                  selected={selectedMedicos}
+                  onChange={setSelectedMedicos}
+                  placeholder="Filtrar Profissionais..."
+                  className="bg-background"
+                />
+                {selectedMedicos.length > 0 && (
+                  <Button variant="ghost" size="icon" onClick={() => setSelectedMedicos([])}>
+                    <FilterX className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                )}
+              </div>
+
+              {/* Filtro específico de Exames */}
+              <div className="w-full sm:w-auto flex-1 max-w-xl flex items-center gap-2">
+                <MultiSelect
+                  options={examesDisponiveis}
+                  selected={selectedExames}
+                  onChange={setSelectedExames}
+                  placeholder="Filtrar Exames..."
+                  className="bg-background"
+                />
+                {selectedExames.length > 0 && (
+                  <Button variant="ghost" size="icon" onClick={() => setSelectedExames([])}>
+                    <FilterX className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                )}
+              </div>
+
+              <div className="w-full sm:w-64">
+                <Input
+                  placeholder="Buscar paciente global..."
+                  value={globalPatientSearch}
+                  onChange={(e) => setGlobalPatientSearch(e.target.value)}
+                  className="bg-background w-full"
+                />
+              </div>
+            </div>
+
+            <Button
+              onClick={() => setIsDialogOpen(true)}
+              className="w-full xl:w-auto shadow-md shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <Microscope className="mr-2 h-4 w-4" /> Novo Exame
+            </Button>
+          </div>
+
+          {
+            isLoading ? (
+              <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+            ) : (
+              <div className="grid gap-6">
+                {/* INVERSÃO: Agora mapeamos os EXAMES, e não os médicos! */}
+
+                {examesFiltrados.map(exame => {
+
+                  const dados = lancamentos.filter(l =>
+                    l.servico?.id === exame.value && // <-- Agrupa pelo ID do Serviço
+                    l.servico.categoria === TAB_TO_CATEGORY.exames &&
+                    // O filtro de médicos agora atua secundariamente DENTRO do exame
+                    (selectedMedicos.length === 0 || (l.profissional && selectedMedicos.includes(l.profissional.id)))
+                  );
+
+                  if (dados.length === 0) return null;
+
+                  return (
+                    <GroupTableCard
+                      key={exame.value}
+                      group={exame} // O Header do card agora será o nome do Exame (ex: "Exame de Sangue")
+                      dados={dados}
+                      onDeleteClick={setLancamentoToDelete}
+                      globalSearch={globalPatientSearch}
+                      isAdmin={isAdmin}
+                      mostrarServico={false}     // <-- Escondemos a coluna de serviço (já é o título do card)
+                      mostrarProfissional={true} // <-- Mostramos a nova coluna de Profissional na tabela!
+                    />
+                  )
+                })}
+
+                {!isLoading && examesFiltrados.length === 0 && (
+                  <div className="text-center py-10 text-muted-foreground">Nenhum exame encontrado no período.</div>
                 )}
               </div>
             )

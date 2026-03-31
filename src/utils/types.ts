@@ -21,8 +21,8 @@ export interface RegisterData {
 
 
 
-export type TipoLancamento = 'CONSULTA' | 'TERAPIA';
-export type MetodoPagamento = 'PIX' | 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' ;
+export type TipoLancamento = 'CONSULTA' | 'TERAPIA' | "EXAME";;
+export type MetodoPagamento = 'PIX' | 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'CONVENIO' ;
 
 export interface Especialidade {
   id: string;
