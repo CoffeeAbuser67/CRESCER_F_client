@@ -12,15 +12,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 
-export function SmartDatePicker({ value, onChange, label }: any) {
+export function SmartDatePicker({ value, onChange, label, disableFutureDates }: any) {
   const [isOpen, setIsOpen] = React.useState(false)
 
   // Tratamento de segurança para a data
   const date = React.useMemo(() => {
     if (!value) return undefined
-    // Se já for objeto Date, usa. Se for string, tenta fazer parse.
     const parsed = value instanceof Date ? value : parseISO(value)
-    // Só retorna se for uma data válida
     return isValid(parsed) ? parsed : undefined
   }, [value])
 
@@ -37,7 +35,7 @@ export function SmartDatePicker({ value, onChange, label }: any) {
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, "dd/MM/yyyy", { locale: ptBR }) : <span>Selecione uma data</span>}
+            {date ? format(date, "dd/MM/yyyy", { locale: ptBR }) : <span>-- / -- / --</span>}
           </Button>
         </PopoverTrigger>
         {/* w-auto e p-0 são essenciais aqui */}
@@ -45,6 +43,7 @@ export function SmartDatePicker({ value, onChange, label }: any) {
           <Calendar
             mode="single"
             selected={date}
+            disabled={disableFutureDates ? { after: new Date() } : undefined}
             onSelect={(d) => {
               // Envia formato ISO (YYYY-MM-DD...) para o formulário
               if (d) {

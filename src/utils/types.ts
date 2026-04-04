@@ -7,7 +7,6 @@ export interface User {
   role: 'ADMIN' | 'COMUM';
 }
 
-
 export interface LoginCredentials {
   username: string; 
   password: string;
@@ -19,9 +18,7 @@ export interface RegisterData {
   password: string;
 }
 
-
-
-export type TipoLancamento = 'CONSULTA' | 'TERAPIA' | "EXAME";;
+export type CategoriaServico = 'CONSULTA' | 'TERAPIA' | 'EXAME';
 export type MetodoPagamento = 'PIX' | 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'CONVENIO' ;
 
 export interface Especialidade {
@@ -39,7 +36,7 @@ export interface Profissional {
 export interface Servico {
   id: string; // UUID
   nome: string;
-  categoria: TipoLancamento;
+  categoria: CategoriaServico;
 }
 
 export interface Paciente {
@@ -48,29 +45,66 @@ export interface Paciente {
   telefone?: string;
 }
 
-export interface Lancamento {
-  id: string; // UUID
-  data_pagamento: string; // YYYY-MM-DD
-  data_competencia: string; // YYYY-MM-DD
-  valor: number; // Vem como number do JSON, cuidado com decimais no JS
-  metodo_pagamento: MetodoPagamento;
-  observacao?: string;
-  
-  // Relacionamentos expandidos
-  paciente: Paciente;
-  servico: Servico;
-  profissional?: Profissional; // Opcional (Terapia)
+
+export type StatusVenda = 'ATIVA' | 'FINALIZADA' | 'CANCELADA' | 'PARCIALMENTE_CANCELADA';
+export type StatusAgendamento = 'PENDENTE' | 'REALIZADO' | 'CANCELADO' | 'FALTA';
+export type StatusParcela = 'PENDENTE' | 'PAGO' | 'CANCELADO' | 'INADIMPLENTE';
+
+
+
+// 1. Parcela (The Caixa)
+export interface ParcelaCreate {
+  valor_parcela: number;
+  data_vencimento: string; // YYYY-MM-DD
+  data_pagamento?: string | null;
+  metodo_pagamento?: MetodoPagamento | null;
+  status?: StatusParcela;
 }
 
-// Payload para criação (sem ID)
-export interface CreateLancamentoDTO {
-  data_pagamento: string;
-  data_competencia: string;
-  valor: number;
-  metodo_pagamento: MetodoPagamento;
-  observacao?: string;
+export interface Parcela extends ParcelaCreate {
+  id: string;
+  venda_id: string;
+}
+
+// 2. Agendamento (The Suor)
+export interface AgendamentoCreate {
+  data_competencia?: string | null; // YYYY-MM-DD
+  status?: StatusAgendamento;
   servico_id: string;
-  profissional_id?: string | null;
+  profissional_id: string;
+}
+
+export interface Agendamento extends AgendamentoCreate {
+  id: string;
+  venda_id: string;
+  // Included directly in the response
+  servico: { id: string; nome: string; categoria: string };
+  profissional: { id: string; nome: string; ativo: boolean };
+}
+
+// 3. Venda (The Contract / Parent)
+export interface VendaCreate {
+  data_venda: string; // YYYY-MM-DD
+  valor_total: number;
+  status?: StatusVenda;
+  observacao?: string;
+  
   paciente_id?: string | null;
   paciente_nome?: string | null; // On-the-fly
+  
+  // The Wizard nested payload
+  agendamentos: AgendamentoCreate[];
+  parcelas: ParcelaCreate[];
+}
+
+export interface Venda {
+  id: string;
+  data_venda: string;
+  valor_total: number;
+  status: StatusVenda;
+  observacao?: string;
+  paciente: Paciente;
+  
+  agendamentos: Agendamento[];
+  parcelas: Parcela[];
 }

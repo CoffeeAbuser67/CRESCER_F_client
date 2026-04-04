@@ -35,7 +35,7 @@ export function DataTable<TData, TValue>({
   searchValue = "",
 }: DataTableProps<TData, TValue>) {
 
-  const [sorting, setSorting] = useState<SortingState>([{ id: "data_pagamento", desc: true }])
+  const [sorting, setSorting] = useState<SortingState>([{ id: "data_vencimento", desc: true }])
 
   const columnFilters = useMemo<ColumnFiltersState>(
     () => (searchKey && searchValue ? [{ id: searchKey, value: searchValue }] : []),

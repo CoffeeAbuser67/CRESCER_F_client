@@ -1,42 +1,43 @@
 import { api } from "../lib/api";
 import type {
-  Lancamento,
-  CreateLancamentoDTO,
   Profissional,
   Servico,
   Paciente,
+  Venda,
+  VendaCreate,
+  MetodoPagamento,
+  StatusAgendamento,
 } from "../utils/types";
 
 export const financeiroService = {
-  getLancamentos: async (
-    startDate: string,
-    endDate: string,
-    skip = 0,
-    limit = 50,
-  ): Promise<Lancamento[]> => {
+  createVenda: async (payload: VendaCreate): Promise<Venda> => {
+    const { data } = await api.post<Venda>("/financeiro/vendas", payload);
+    return data;
+  },
+
+  getVendas: async (skip = 0, limit = 100): Promise<Venda[]> => {
     const params = new URLSearchParams({
-      start_date: startDate,
-      end_date: endDate,
       skip: skip.toString(),
       limit: limit.toString(),
     });
-
-    const { data } = await api.get(
-      `/financeiro/lancamentos?${params.toString()}`,
+    const { data } = await api.get<Venda[]>(
+      `/financeiro/vendas?${params.toString()}`,
     );
     return data;
   },
 
-  deleteLancamento: async (id: string): Promise<void> => {
-    await api.delete(`/financeiro/lancamentos/${id}`);
+  darBaixaParcela: async (
+    id: string,
+    payload: { data_pagamento: string; metodo_pagamento: MetodoPagamento },
+  ): Promise<void> => {
+    await api.patch(`/financeiro/parcelas/${id}/pagar`, payload);
   },
 
-  createLancamento: async (payload: CreateLancamentoDTO) => {
-    const { data } = await api.post<Lancamento>(
-      "/financeiro/lancamentos",
-      payload,
-    );
-    return data;
+  atualizarStatusAgendamento: async (
+    id: string,
+    payload: { status: StatusAgendamento },
+  ): Promise<void> => {
+    await api.patch(`/financeiro/agendamentos/${id}/status`, payload);
   },
 
   createProfissional: async (payload: {
@@ -85,13 +86,13 @@ export const financeiroService = {
     await api.delete(`/financeiro/servicos/${id}`);
   },
 
-  getDashboardResumo: async (
-    startDate: string,
-    endDate: string,
-  ): Promise<any> => {
-    const { data } = await api.get("/financeiro/dashboard/resumo", {
-      params: { start_date: startDate, end_date: endDate },
-    });
-    return data;
-  },
+  // getDashboardResumo: async (
+  //   startDate: string,
+  //   endDate: string,
+  // ): Promise<any> => {
+  //   const { data } = await api.get("/financeiro/dashboard/resumo", {
+  //     params: { start_date: startDate, end_date: endDate },
+  //   });
+  //   return data;
+  // },
 };
