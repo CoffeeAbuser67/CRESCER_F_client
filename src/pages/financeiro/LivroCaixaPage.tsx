@@ -1,12 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { FilterX, Stethoscope, Armchair, Loader2, Microscope } from "lucide-react";
 
 import { DataTable } from "@/components/data-table";
-import { getColumns, ParcelaTableRow } from "./components/columns"; // UPDATE: Using ParcelaTableRow
-import { VendaDialog } from "./components/VendaDialog"; // ADDED
-import { BaixaDialog } from "./components/BaixaDialog"; // ADDED
+import { getColumns, ParcelaTableRow } from "./components/columns"; 
+import { VendaDialog } from "./components/VendaDialog"; 
+import { BaixaDialog } from "./components/BaixaDialog"; 
 import { financeiroService } from "@/services/financeiroService";
 import { MultiSelect } from "@/components/multi-select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { startOfMonth, endOfMonth, format } from "date-fns";
 import { parseDate } from "@internationalized/date";
 import { SmartDateRangePicker } from "@/components/date-range-picker-aria";
-
+import { DetalhesVendaSheet } from "./components/DetalhesVendaSheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,7 +40,8 @@ function GroupTableCard({
   group,
   dados,
   onDeleteClick,
-  onBaixaClick, // ADDED
+  onBaixaClick,
+  onViewClick,
   globalSearch,
   isAdmin,
   mostrarServico,
@@ -48,14 +50,17 @@ function GroupTableCard({
   group: { label: string; value: string };
   dados: ParcelaTableRow[]; // CHANGED
   onDeleteClick: (id: string) => void;
-  onBaixaClick: (parcela: ParcelaTableRow) => void; // ADDED
+  onBaixaClick: (parcela: ParcelaTableRow) => void;
+  onViewClick: (vendaId: string) => void;
   globalSearch: string;
   isAdmin: boolean;
   mostrarServico?: boolean;
   mostrarProfissional?: boolean;
 }) {
   const total = dados.reduce((acc, curr) => acc + Number(curr.valor_parcela || 0), 0); // CHANGED
-  const memoizedColumns = useMemo(() => getColumns(onDeleteClick, onBaixaClick, mostrarServico, mostrarProfissional), [onDeleteClick, onBaixaClick, mostrarServico, mostrarProfissional]);
+  const memoizedColumns = useMemo(() =>
+    getColumns(onDeleteClick, onBaixaClick, onViewClick, mostrarServico, mostrarProfissional),
+    [onDeleteClick, onBaixaClick, onViewClick, mostrarServico, mostrarProfissional]);
 
   return (
     <Card className="overflow-hidden shadow-sm border transition-colors">
@@ -83,9 +88,11 @@ export default function LivroCaixaPage() {
   const [activeTab, setActiveTab] = useState("consultas");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const [vendas, setVendas] = useState<any[]>([]); // CHANGED
   const [parcelaParaBaixa, setParcelaParaBaixa] = useState<ParcelaTableRow | null>(null); // ADDED
+  const [vendaIdParaDetalhes, setVendaIdParaDetalhes] = useState<string | null>(null);
+
 
   // Filter States
   const [selectedMedicos, setSelectedMedicos] = useState<string[]>([]);
@@ -155,21 +162,21 @@ export default function LivroCaixaPage() {
         const vencimentoDate = parcela.data_vencimento;
 
         if (vencimentoDate >= startStr && vencimentoDate <= endStr) {
-           flat.push({
-             id: parcela.id,
-             venda_id: venda.id,
-             paciente: venda.paciente,
-             servico: agendamentoPrincipal.servico,
-             profissional: agendamentoPrincipal.profissional,
-             valor_parcela: Number(parcela.valor_parcela),
-             data_vencimento: parcela.data_vencimento,
-             data_pagamento: parcela.data_pagamento,
-             metodo_pagamento: parcela.metodo_pagamento,
-             status: parcela.status || 'PENDENTE',
-             observacao: venda.observacao,
-             numero_parcela: index + 1,
-             total_parcelas: totalParcelas,
-           });
+          flat.push({
+            id: parcela.id,
+            venda_id: venda.id,
+            paciente: venda.paciente,
+            servico: agendamentoPrincipal.servico,
+            profissional: agendamentoPrincipal.profissional,
+            valor_parcela: Number(parcela.valor_parcela),
+            data_vencimento: parcela.data_vencimento,
+            data_pagamento: parcela.data_pagamento,
+            metodo_pagamento: parcela.metodo_pagamento,
+            status: parcela.status || 'PENDENTE',
+            observacao: venda.observacao,
+            numero_parcela: index + 1,
+            total_parcelas: totalParcelas,
+          });
         }
       });
     });
@@ -295,10 +302,11 @@ export default function LivroCaixaPage() {
                       group={medico}
                       dados={dados}
                       onDeleteClick={setLancamentoToDelete}
-                      onBaixaClick={setParcelaParaBaixa} // ADDED
+                      onBaixaClick={setParcelaParaBaixa}
+                      onViewClick={setVendaIdParaDetalhes}
                       globalSearch={globalPatientSearch}
                       isAdmin={isAdmin}
-                      mostrarServico={false} 
+                      mostrarServico={false}
 
                     />
                   )
@@ -396,7 +404,8 @@ export default function LivroCaixaPage() {
                       group={medico} // Card title is now the Doctor's name
                       dados={dados}
                       onDeleteClick={setLancamentoToDelete}
-                      onBaixaClick={setParcelaParaBaixa} // ADDED
+                      onBaixaClick={setParcelaParaBaixa}
+                      onViewClick={setVendaIdParaDetalhes}
                       globalSearch={globalPatientSearch}
                       isAdmin={isAdmin}
                       mostrarServico={true}
@@ -492,7 +501,8 @@ export default function LivroCaixaPage() {
                       group={exame} // Card header is now the Exam name
                       dados={dados}
                       onDeleteClick={setLancamentoToDelete}
-                      onBaixaClick={setParcelaParaBaixa} // ADDED
+                      onBaixaClick={setParcelaParaBaixa}
+                      onViewClick={setVendaIdParaDetalhes}
                       globalSearch={globalPatientSearch}
                       isAdmin={isAdmin}
                       mostrarServico={false}     // <-- Hide service column
@@ -524,6 +534,12 @@ export default function LivroCaixaPage() {
         onClose={() => setParcelaParaBaixa(null)}
         onSuccess={() => fetchData()}
       />
+
+      <DetalhesVendaSheet
+        vendaId={vendaIdParaDetalhes}
+        onClose={() => setVendaIdParaDetalhes(null)}
+      />
+
 
       <AlertDialog open={!!lancamentoToDelete} onOpenChange={(open) => !open && setLancamentoToDelete(null)}>
         <AlertDialogContent>

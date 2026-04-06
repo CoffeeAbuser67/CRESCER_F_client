@@ -2,7 +2,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Paciente, MetodoPagamento } from "@/utils/types";
 import { Button } from "@/components/ui/button";
-import { ArrowUpDown, Trash2, Banknote, StickyNote, CreditCard, HeartHandshake, Gift, CheckCircle2 } from "lucide-react";
+import { ArrowUpDown, Trash2, Banknote, StickyNote, CreditCard, HeartHandshake, Gift, CheckCircle2, Eye } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -56,6 +56,7 @@ const getPaymentIcon = (method?: string | null) => {
 export const getColumns = (
     onDeleteClick: (id: string) => void,
     onBaixaClick: (parcela: ParcelaTableRow) => void,
+    onViewClick: (vendaId: string) => void,
     mostrarServico: boolean = false,
     mostrarProfissional: boolean = false
 ): ColumnDef<ParcelaTableRow>[] => {
@@ -150,7 +151,7 @@ export const getColumns = (
             cell: ({ row }) => {
                 const obs = row.original.observacao;
                 const status = row.original.status;
-
+                const vendaId = row.original.venda_id;
                 return (
                     <div className="flex justify-end gap-2">
                         {status !== 'PAGO' && (
@@ -165,26 +166,16 @@ export const getColumns = (
                             </Button>
                         )}
 
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="ghost" size="icon" disabled={!obs}
-                                    className={cn("h-8 w-8 transition-colors", obs ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50" : "text-muted-foreground/30")}
-                                >
-                                    <StickyNote className="h-4 w-4" />
-                                </Button>
-                            </PopoverTrigger>
-                            {obs && (
-                                <PopoverContent className="w-80 p-4 shadow-xl border-2 z-100" align="end">
-                                    <div className="space-y-2">
-                                        <h4 className="font-semibold leading-none text-sm border-b pb-2 flex items-center gap-2">
-                                            <StickyNote className="h-3 w-3" /> Observações do Contrato
-                                        </h4>
-                                        <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap italic">"{obs}"</p>
-                                    </div>
-                                </PopoverContent>
-                            )}
-                        </Popover>
+
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            title="Ver Contrato"
+                            onClick={() => onViewClick(vendaId)}
+                        >
+                            <Eye className="h-4 w-4" />
+                        </Button>
 
                         {/* We use delete on Venda for now, so we pass venda_id */}
                         <Button

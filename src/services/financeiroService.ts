@@ -26,6 +26,11 @@ export const financeiroService = {
     return data;
   },
 
+  getVendaById: async (id: string) => {
+    const response = await api.get(`/financeiro/vendas/${id}`);
+    return response.data;
+  },
+
   darBaixaParcela: async (
     id: string,
     payload: { data_pagamento: string; metodo_pagamento: MetodoPagamento },
@@ -33,12 +38,19 @@ export const financeiroService = {
     await api.patch(`/financeiro/parcelas/${id}/pagar`, payload);
   },
 
-  atualizarStatusAgendamento: async (
-    id: string,
-    payload: { status: StatusAgendamento },
-  ): Promise<void> => {
-    await api.patch(`/financeiro/agendamentos/${id}/status`, payload);
+  updateAgendamentoStatus: async (id: string, status: string) => {
+    // Assuming your backend expects the status in the request body
+    const response = await api.patch(`/financeiro/agendamentos/${id}/status`, {
+      status,
+    });
+    return response.data;
   },
+
+  reagendarSessao: async (id: string, payload: { data_hora: string, profissional_id?: string }) => {
+      const response = await api.patch(`/financeiro/agendamentos/${id}`, payload);
+      return response.data;
+    },
+
 
   createProfissional: async (payload: {
     nome: string;
