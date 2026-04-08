@@ -118,3 +118,210 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+
+
+
+/* ==========================================================================
+   TEMA GOOGLE CALENDAR PARA O REACT-BIG-CALENDAR
+   ========================================================================== */
+
+
+.rbc-allday-cell {
+  display: none !important;
+}
+/* 1. Remove outer calendar border */
+.rbc-calendar {
+  border: none !important;
+}
+
+/* 2. Header styling (Days of week) */
+.rbc-header {
+  border: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 6px 12px 12px 0 !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  color: #64748b !important;
+  text-transform: capitalize;
+}
+
+/* 3. Time Gutter structure - Lock widths to prevent vertical misalignment */
+.rbc-time-gutter, 
+.rbc-time-header-gutter {
+  min-width: 65px !important;
+  max-width: 65px !important;
+  border-right: none !important;
+  background-color: transparent !important;
+}
+
+/* Base text styling for the gutter */
+.rbc-time-gutter {
+  color: #94a3b8 !important;
+  font-size: 0.75rem !important;
+  font-weight: 500;
+}
+
+/* Remove internal extra borders */
+.rbc-time-gutter .rbc-timeslot-group {
+  border-bottom: none !important;
+}
+
+/* Perfect alignment for the time labels */
+.rbc-time-gutter .rbc-label {
+  padding: 0 8px 0 12px !important; /* Left and right breathing room */
+  display: block !important; /* Kill flexbox to avoid unpredictable offsets */
+  text-align: right !important; /* Push text to the right edge */
+  line-height: 1 !important; /* Standardize height */
+  position: relative !important;
+  top: -0.6em !important; /* Moves text UP by exactly half its font size to intersect the grid line */
+}
+
+/* Hide the 00:00 label WITHOUT collapsing the row height (Crucial to keep horizontal alignment) */
+.rbc-time-gutter .rbc-timeslot-group:first-child .rbc-label {
+  color: transparent !important;
+}
+
+/* 4. Grid lines smoothing */
+.rbc-day-bg {
+  border-left: 1px solid #e2e8f0 !important;
+}
+
+.rbc-timeslot-group {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* Dashed line for the 30-minute mark */
+.rbc-time-slot {
+  border-top: 1px dashed #e2e8f0 !important;
+}
+
+/* Remove top border from the full-hour slot to prevent double lines */
+.rbc-time-slot:first-child {
+  border-top: none !important;
+}
+
+.rbc-time-content {
+  border-top: none !important;
+}
+
+.rbc-time-content > * + * > * {
+  border-left: 1px solid #e2e8f0 !important;
+}
+
+/* 5. Highlight today's column */
+.rbc-day-bg.rbc-today {
+  background-color: #f8fafc !important; /* Very soft slate-50 to avoid contrast issues */
+}
+
+/* 6. Current time indicator line */
+.rbc-current-time-indicator {
+  background-color: #ef4444 !important;
+  height: 2px !important;
+  z-index: 3;
+}
+
+/* The red dot on the left of the current time line */
+.rbc-current-time-indicator::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #ef4444;
+}
+
+
+.rbc-slot-selection {
+  background-color: rgba(59, 130, 246, 0.25) !important; /* Blue-500 with 25% opacity */
+  border: 1px solid rgba(59, 130, 246, 0.5) !important;
+  border-radius: 4px !important;
+}
+
+/* 2. Google Calendar style: Remove all borders from the time gutter */
+.rbc-time-gutter,
+.rbc-time-header-gutter,
+.rbc-time-gutter .rbc-timeslot-group,
+.rbc-time-gutter .rbc-time-slot {
+  border: none !important;
+}
+
+/* =======================================================
+   CALENDAR BORDER RADIUS (SMOOTH CORNERS)
+   ======================================================= */
+
+/* 1. Apply rounded corners to the main views and clip the inner sharp edges */
+.rbc-time-view,
+.rbc-month-view,
+.rbc-agenda-view {
+  border-radius: 0.75rem !important; /* 12px - matches Tailwind rounded-xl */
+  overflow: hidden !important; /* Forces inner grid lines to respect the border radius */
+  border: 1px solid #e2e8f0 !important; /* Soft border wrapping the whole grid */
+  background-color: #ffffff !important;
+}
+
+/* 2. Remove the top border of the header so it doesn't double up with the new container border */
+.rbc-time-view .rbc-header {
+  border-top: none !important;
+}
+
+
+
+/* =======================================================
+   AGENDA VIEW (LISTA PREMIUM ESTILO SHADCN)
+   ======================================================= */
+
+/* 1. Tira as bordas nativas da tabela e ajusta o layout */
+.rbc-agenda-view table.rbc-agenda-table {
+  border: none !important;
+  border-collapse: collapse !important;
+}
+
+/* 2. Cabeçalhos da Tabela (Data, Hora, Sessão) */
+.rbc-agenda-view table th {
+  padding: 12px 16px !important; /* Adiciona o respiro nas laterais! */
+  font-size: 0.75rem !important; /* text-xs */
+  font-weight: 600 !important;
+  color: #64748b !important; /* text-slate-500 */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e2e8f0 !important;
+  border-right: none !important;
+  text-align: left !important;
+  background-color: #f8fafc !important; /* Fundo cinza bem suave */
+}
+
+/* 3. Células das Linhas */
+.rbc-agenda-view table td {
+  padding: 14px 16px !important; /* Respiro vertical e horizontal */
+  border-bottom: 1px solid #f1f5f9 !important; /* Linha de divisão bem sutil */
+  border-right: none !important;
+  font-size: 0.875rem !important; /* text-sm */
+  vertical-align: middle !important;
+}
+
+/* 4. Efeito de Hover nas linhas pra dar interatividade */
+.rbc-agenda-view table tbody tr {
+  transition: background-color 0.2s ease;
+}
+.rbc-agenda-view table tbody tr:hover {
+  background-color: #000000bb !important;
+}
+
+/* 5. Destacando a tipografia das colunas específicas */
+.rbc-agenda-date-cell {
+  font-weight: 600 !important;
+  color: #ffffff !important; /* Data mais escura */
+}
+
+.rbc-agenda-time-cell {
+  font-variant-numeric: tabular-nums; /* Mantém os números alinhados */
+  font-weight: 600 !important;
+  color: #ffffff !important;
+}
+
+.rbc-agenda-event-cell {
+  color: #ffffff !important;
+}

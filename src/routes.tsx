@@ -15,6 +15,7 @@ const LoginPage = lazy(() => import("./pages/home/LoginPage"));
 const DashboardPage = lazy(() => import("./pages/dashboard/DashboardPage"));
 const LivroCaixaPage = lazy(() => import("./pages/financeiro/LivroCaixaPage"));
 const ConfiguracoesPage = lazy(() => import("./pages/configuracoes/ConfiguracoesPage"));
+const AgendaPage = lazy(() => import("./pages/agenda/AgendaPage"));
 
 
 const routes: RouteObject[] = [
@@ -55,6 +56,12 @@ const routes: RouteObject[] = [
         path: "lancamentos",
         element: <LivroCaixaPage />
       }, 
+
+      {
+        path: "agenda",
+        element: <AgendaPage />
+      }, 
+
       {
         path: "configuracoes",
         element: (
