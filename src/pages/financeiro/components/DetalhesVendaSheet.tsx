@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { format, parseISO } from "date-fns";
-import { Loader2, DollarSign, CalendarDays, AlignLeft } from "lucide-react";
+import { Loader2, DollarSign, CalendarDays, AlignLeft, Clock } from "lucide-react";
 
 import {
   Sheet,
@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { financeiroService } from "@/services/financeiroService";
 // Adjust the import path for your types if necessary
 import type { Venda } from "@/utils/types";
+
 
 interface DetalhesVendaSheetProps {
   vendaId: string | null;
@@ -59,7 +60,7 @@ export function DetalhesVendaSheet({ vendaId, onClose }: DetalhesVendaSheetProps
         return format(parsedDate, formatStr);
       }
       return null;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
       return null;
     }
@@ -81,7 +82,7 @@ export function DetalhesVendaSheet({ vendaId, onClose }: DetalhesVendaSheetProps
           </div>
         ) : (
           <div className="flex flex-col">
-            
+
             {/* Display observations if they exist */}
             {venda?.observacao && (
               <div className="mb-6 bg-slate-50 p-4 rounded-lg border border-slate-100">
@@ -117,11 +118,11 @@ export function DetalhesVendaSheet({ vendaId, onClose }: DetalhesVendaSheetProps
                           <p className="font-semibold text-sm text-slate-800">
                             Parcela {index + 1} de {venda.parcelas.length}
                           </p>
-                          
+
                           <p className="text-xs text-slate-500 mt-1">
                             Vence em: {safeFormatDate(parcela.data_vencimento, "dd/MM/yyyy") || "--"}
                           </p>
-                          
+
                           {parcela.data_pagamento && safeFormatDate(parcela.data_pagamento, "dd/MM/yyyy") && (
                             <p className="text-xs text-emerald-600 mt-0.5">
                               Paga em: {safeFormatDate(parcela.data_pagamento, "dd/MM/yyyy")}
@@ -155,41 +156,54 @@ export function DetalhesVendaSheet({ vendaId, onClose }: DetalhesVendaSheetProps
                     {[...venda.agendamentos]
                       .sort((a: any, b: any) => a.pkid - b.pkid)
                       .map((agendamento: any, index: number) => {
-                      
-                      // Get the date from the correct column: data_competencia
-                      const rawDate = agendamento.data_competencia;
-                      const formattedDate = safeFormatDate(rawDate, "dd/MM/yyyy");
 
-                      return (
-                        <div key={agendamento.id} className="flex items-center justify-between p-3 border rounded-lg bg-white shadow-sm">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="font-semibold text-sm text-slate-800">
-                                Sessão {index + 1}
+                        const rawDate = agendamento.data_competencia;
+                        const formattedDate = safeFormatDate(rawDate, "dd/MM/yyyy");
+
+                        // Extract times and ensure they look good (handling nulls and 'HH:mm:ss' format)
+                        const horaInicio = agendamento.hora_inicio ? agendamento.hora_inicio.substring(0, 5) : null;
+                        const horaFim = agendamento.hora_fim ? agendamento.hora_fim.substring(0, 5) : null;
+
+                        return (
+                          <div key={agendamento.id} className="flex items-center justify-between p-3 border rounded-lg bg-white shadow-sm">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-sm text-slate-800">
+                                  Sessão {index + 1}
+                                </p>
+                                <Badge
+                                  className={`text-[10px] h-5 border-0 font-semibold ${agendamento.status === 'REALIZADO' ? 'bg-emerald-500 hover:bg-emerald-600 text-white' :
+                                      agendamento.status === 'FALTA' ? 'bg-amber-500 hover:bg-amber-600 text-white' :
+                                        agendamento.status === 'CANCELADO' ? 'bg-red-500 hover:bg-red-600 text-white' :
+                                          'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                    }`}
+                                >
+                                  {agendamento.status || "PENDENTE"}
+                                </Badge>
+                              </div>
+
+                              <div className="flex flex-col gap-1 mt-2">
+                                <p className="text-xs text-slate-600 flex items-center gap-1.5">
+                                  <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
+                                  {formattedDate ? formattedDate : "Data não definida"}
+                                </p>
+
+                                {/* Conditionally render time if it exists */}
+                                {(horaInicio || horaFim) && (
+                                  <p className="text-xs text-slate-600 flex items-center gap-1.5">
+                                    <Clock className="h-3.5 w-3.5 text-slate-400" />
+                                    {horaInicio ? horaInicio : "--:--"} às {horaFim ? horaFim : "--:--"}
+                                  </p>
+                                )}
+                              </div>
+
+                              <p className="text-xs text-slate-500 mt-2 border-t pt-1">
+                                Profissional: <span className="font-medium text-slate-700">{agendamento.profissional?.nome || "Não definido"}</span>
                               </p>
-                              <Badge
-                                className={`text-[10px] h-5 border-0 font-semibold ${
-                                  agendamento.status === 'REALIZADO' ? 'bg-emerald-500 hover:bg-emerald-600 text-white' :
-                                  agendamento.status === 'FALTA' ? 'bg-amber-500 hover:bg-amber-600 text-white' :
-                                  agendamento.status === 'CANCELADO' ? 'bg-red-500 hover:bg-red-600 text-white' :
-                                  'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                                }`}
-                              >
-                                {agendamento.status || "PENDENTE"}
-                              </Badge>
                             </div>
-
-                            <p className="text-xs text-slate-600 mt-1.5 flex items-center gap-1">
-                              <CalendarDays className="h-3 w-3" />
-                              {formattedDate ? formattedDate : "Data não definida"}
-                            </p>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              Profissional: {agendamento.profissional?.nome || "Não definido"}
-                            </p>
                           </div>
-                        </div>
-                      )
-                    })}
+                        )
+                      })}
                   </div>
                 )}
               </TabsContent>

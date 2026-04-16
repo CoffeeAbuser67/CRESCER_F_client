@@ -80,12 +80,25 @@ const formSchema = z
       )
       .min(1, "Adicione pelo menos uma parcela"),
 
-    // Children: Agendamentos (Suor) - Now only handles dates!
     agendamentos: z
       .array(
         z.object({
           data_competencia: z.string().optional(),
-        })
+          hora_inicio: z.string().optional(),
+          hora_fim: z.string().optional(),
+        }).refine(
+          (data) => {
+            // Só valida se os dois campos estiverem preenchidos
+            if (data.hora_inicio && data.hora_fim) {
+              return data.hora_inicio < data.hora_fim;
+            }
+            return true;
+          },
+          {
+            message: "Fim deve ser maior que o início",
+            path: ["hora_fim"], // O erro vai aparecer embaixinho do input de Hora Fim
+          }
+        )
       )
       .min(1, "Adicione pelo menos uma sessão"),
   })
@@ -142,7 +155,9 @@ export function VendaDialog({ open, onOpenChange, onSuccess, categoriaFilter }: 
       ],
       agendamentos: [
         {
-          data_competencia: "", // Critical fix: Starts empty
+          data_competencia: "",
+          hora_inicio: "",
+          hora_fim: "",
         },
       ],
     },
@@ -207,6 +222,8 @@ export function VendaDialog({ open, onOpenChange, onSuccess, categoriaFilter }: 
           servico_id: data.servico_id,
           profissional_id: data.profissional_id,
           data_competencia: a.data_competencia || null,
+          hora_inicio: a.hora_inicio || null,
+          hora_fim: a.hora_fim || null,
         }))
       };
 
@@ -404,7 +421,7 @@ export function VendaDialog({ open, onOpenChange, onSuccess, categoriaFilter }: 
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => appendAgendamento({ data_competencia: "" })}
+                  onClick={() => appendAgendamento({ data_competencia: "", hora_inicio: "", hora_fim: "" })}
                   className="bg-background shadow-sm hover:bg-accent"
                 >
                   <CalendarPlus className="mr-2 h-4 w-4" /> Adicionar Sessão
@@ -412,34 +429,91 @@ export function VendaDialog({ open, onOpenChange, onSuccess, categoriaFilter }: 
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {agendamentosFields.map((item, index) => (
-                  <div key={item.id} className="relative flex items-start gap-2 p-3 border rounded-md bg-background">
-                    <FormField
-                      control={form.control}
-                      name={`agendamentos.${index}.data_competencia`}
-                      render={({ field }) => (
-                        <FormItem className="flex-1 flex flex-col">
-                          <FormLabel className="text-xs text-muted-foreground">Sessão {index + 1}</FormLabel>
-                          <FormControl>
-                            <SmartDatePicker value={field.value} onChange={field.onChange} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                {agendamentosFields.map((item, index) => {
+                  // Listen to the date field to enable/disable time inputs
+                  const dataSelecionada = form.watch(`agendamentos.${index}.data_competencia`);
+                  const isHorarioHabilitado = !!dataSelecionada;
 
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeAgendamento(index)}
-                      disabled={agendamentosFields.length === 1}
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-background border shadow-sm text-red-500 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
+                  return (
+                    <div key={item.id} className="relative flex flex-col gap-3 p-4 border rounded-md bg-background shadow-sm">
+                      <FormField
+                        control={form.control}
+                        name={`agendamentos.${index}.data_competencia`}
+                        render={({ field }) => (
+                          <FormItem className="flex-1 flex flex-col">
+                            <FormLabel className="text-xs text-muted-foreground">Data (Sessão {index + 1})</FormLabel>
+                            <FormControl>
+                              <SmartDatePicker
+                                value={field.value}
+                                onChange={(val: any) => {
+                                  field.onChange(val);
+                                  // Clear time inputs if date is cleared
+                                  if (!val) {
+                                    form.setValue(`agendamentos.${index}.hora_inicio`, "");
+                                    form.setValue(`agendamentos.${index}.hora_fim`, "");
+                                  }
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <FormField
+                          control={form.control}
+                          name={`agendamentos.${index}.hora_inicio`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs text-muted-foreground">Início</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="time"
+                                  disabled={!isHorarioHabilitado}
+                                  // Fix: Add right margin to the native clock icon to prevent it from touching the border
+                                  className="h-9 w-full min-w-0 pl-2 text-xs bg-background disabled:opacity-50 [&::-webkit-calendar-picker-indicator]:mr-1"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`agendamentos.${index}.hora_fim`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs text-muted-foreground">Fim</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="time"
+                                  disabled={!isHorarioHabilitado}
+                                  // Fix: Add right margin to the native clock icon to prevent it from touching the border
+                                  className="h-9 w-full min-w-0 pl-2 text-xs bg-background disabled:opacity-50 [&::-webkit-calendar-picker-indicator]:mr-1"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeAgendamento(index)}
+                        disabled={agendamentosFields.length === 1}
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-background border shadow-sm text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
 import { Calendar, dateFnsLocalizer, Views, View, Navigate } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay } from "date-fns";
-import ptBR from "date-fns/locale/pt-BR";
+import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth, endOfWeek, addDays } from "date-fns";
+import { ptBR } from "date-fns/locale/pt-BR";
 import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
+
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,34 +35,18 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 // @ts-expect-error - Drag and drop specific CSS
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 
+
+
+import { agendaService } from "@/services/agendaService";
+import { financeiroService } from "@/services/financeiroService";
+import { toast } from "react-toastify";
+
+
+// # ── ⋙──────────────────────────────────────────────➤
+
 const locales = { "pt-BR": ptBR };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
 const DnDCalendar = withDragAndDrop(Calendar);
-
-// --- MOCK DATA ---
-const hoje = new Date();
-const ano = hoje.getFullYear();
-const mes = hoje.getMonth();
-const dia = hoje.getDate();
-
-const mockEvents = [
-  { id: 1, title: "João Silva (Dr. Louco)", professional: "Dr. Louco", start: new Date(ano, mes, dia, 9, 0), end: new Date(ano, mes, dia, 10, 0), status: "REALIZADO", type: "terapia" },
-  { id: 2, title: "Maria Souza (Dra. Ana)", professional: "Dra. Ana", start: new Date(ano, mes, dia, 14, 30), end: new Date(ano, mes, dia, 15, 30), status: "PENDENTE", type: "exame" },
-  { id: 3, title: "Pedro Alves (Dr. Louco)", professional: "Dr. Louco", start: new Date(ano, mes, dia + 1, 10, 0), end: new Date(ano, mes, dia + 1, 11, 0), status: "FALTA", type: "consulta" },
-  { id: 4, title: "Carol (Dra. Ana)", professional: "Dra. Ana", start: new Date(ano, mes, dia - 1, 16, 0), end: new Date(ano, mes, dia - 1, 17, 0), status: "CANCELADO", type: "terapia" },
-];
-
-const mockPatients = [
-  { id: 101, name: "João Silva" },
-  { id: 102, name: "Maria Souza" },
-  { id: 103, name: "Paciente Sem Crédito" },
-];
-
-const mockOpenSessions = [
-  { id: 1001, patientId: 101, title: "Sessão 2/10", professional: "Dr. Louco", type: "terapia" },
-  { id: 1002, patientId: 101, title: "Sessão 3/10", professional: "Dr. Louco", type: "terapia" },
-  { id: 1003, patientId: 102, title: "Avaliação Inicial", professional: "Dra. Ana", type: "consulta" },
-];
 
 // --- CUSTOM COMPONENTS ---
 
@@ -140,11 +125,14 @@ const CustomToolbar = (toolbar: any) => {
 
 // --- MAIN PAGE COMPONENT ---
 export default function AgendaPage() {
-  const [events, setEvents] = useState<any[]>(mockEvents);
+  const [events, setEvents] = useState<any[]>([]);
+  const [patients, setPatients] = useState<any[]>([]);
+  const [openSessions, setOpenSessions] = useState<any[]>([]);
+
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   const [currentView, setCurrentView] = useState<View>(() => window.innerWidth < 768 ? Views.AGENDA : Views.WEEK);
-
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const [popover, setPopover] = useState<{ visible: boolean; x: number; y: number }>({ visible: false, x: 0, y: 0 });
   const [selectedSlot, setSelectedSlot] = useState<{ start: Date; end: Date } | null>(null);
@@ -166,12 +154,71 @@ export default function AgendaPage() {
 
   const uniqueProfessionals = Array.from(new Set([
     ...events.map(e => e.professional),
-    ...mockOpenSessions.map(s => s.professional)
+    ...openSessions.map(s => s.professional)
   ])).filter(Boolean);
 
-  const availableSessions = mockOpenSessions.filter(
-    (session) => session.patientId.toString() === selectedPatientId
+  const availableSessions = openSessions.filter(
+    (session) => session?.patientId?.toString() === selectedPatientId
   );
+
+  // 4. Fetch initial Data (Patients)
+  useEffect(() => {
+    financeiroService.getPacientes().then(setPatients).catch(console.error);
+  }, []);
+
+
+
+
+
+  useEffect(() => {
+    const fetchAgendaData = async () => {
+      try {
+        let start, end;
+
+        if (currentView === Views.DAY) {
+          start = currentDate;
+          end = currentDate;
+        } else if (currentView === Views.AGENDA) {
+          start = currentDate;
+          end = addDays(currentDate, 30); // AGORA SIM! Busca os 30 dias da legenda
+        } else if (currentView === Views.WEEK) {
+          start = startOfWeek(currentDate, { weekStartsOn: 0 });
+          end = endOfWeek(currentDate, { weekStartsOn: 0 });
+        } else {
+          start = startOfMonth(currentDate);
+          end = endOfMonth(currentDate);
+        }
+
+
+
+        const startStr = format(start, "yyyy-MM-dd");
+        const endStr = format(end, "yyyy-MM-dd");
+
+        const [eventsData, sessionsData] = await Promise.all([
+          agendaService.getScheduledEvents(startStr, endStr),
+          agendaService.getOpenSessions()
+        ]);
+
+        setEvents(eventsData);
+        setOpenSessions(sessionsData);
+      } catch (error) {
+        console.error("Error loading agenda data:", error);
+        toast.error("Erro ao carregar dados da agenda");
+      }
+    };
+
+    fetchAgendaData();
+  }, [currentDate, currentView, refreshTrigger]);
+
+
+
+  const closePopover = () => {
+    setPopover({ visible: false, x: 0, y: 0 });
+    setSelectedSlot(null);
+    setSelectedEvent(null);
+    setSelectedPatientId("");
+    setSelectedSessionId("");
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -185,14 +232,6 @@ export default function AgendaPage() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [isMobile]);
-
-  const closePopover = () => {
-    setPopover({ visible: false, x: 0, y: 0 });
-    setSelectedSlot(null);
-    setSelectedEvent(null);
-    setSelectedPatientId("");
-    setSelectedSessionId("");
-  };
 
   const handleSelectSlot = (slotInfo: any) => {
     setSelectedSlot({ start: slotInfo.start, end: slotInfo.end });
@@ -236,100 +275,92 @@ export default function AgendaPage() {
     setPopover({ visible: true, x, y });
   };
 
-  const checkConflict = (professional: string | undefined, newStart: Date, newEnd: Date, excludeEventId?: any) => {
-    if (!professional) return false;
-    return events.some(e => {
-      if (excludeEventId && e.id === excludeEventId) return false;
-      const isSameProf = e.professional === professional;
-      const isOverlapping = newStart < e.end && newEnd > e.start;
-      return isSameProf && isOverlapping;
-    });
-  };
-
-  const handleSaveAllocation = () => {
+  const handleSaveAllocation = async () => {
     if (!selectedSlot || !selectedPatientId || !selectedSessionId) return;
 
-    const patient = mockPatients.find(p => p.id.toString() === selectedPatientId);
-    const sessionToAllocate = mockOpenSessions.find(s => s.id.toString() === selectedSessionId);
+    const patient = patients.find(p => p.id.toString() === selectedPatientId);
+    const sessionToAllocate = openSessions.find(s => s.id.toString() === selectedSessionId);
 
     if (!patient || !sessionToAllocate) return;
 
-    const [startHour, startMinute] = startTime.split(':').map(Number);
-    const [endHour, endMinute] = endTime.split(':').map(Number);
-
     const finalStart = new Date(selectedSlot.start);
-    finalStart.setHours(startHour, startMinute, 0, 0);
+    finalStart.setHours(Number(startTime.split(':')[0]), Number(startTime.split(':')[1]), 0, 0);
 
     const finalEnd = new Date(selectedSlot.start);
-    finalEnd.setHours(endHour, endMinute, 0, 0);
+    finalEnd.setHours(Number(endTime.split(':')[0]), Number(endTime.split(':')[1]), 0, 0);
 
-    const newEvent = {
-      id: sessionToAllocate.id,
-      title: `${patient.name} (${sessionToAllocate.professional})`,
-      professional: sessionToAllocate.professional,
-      start: finalStart,
-      end: finalEnd,
-      status: "PENDENTE",
-      type: sessionToAllocate.type
-    };
-
-    if (checkConflict(sessionToAllocate.professional, finalStart, finalEnd)) {
-      setConflictAlert({
-        isOpen: true,
-        professional: sessionToAllocate.professional,
-        onConfirm: () => {
-          setEvents((prev) => [...prev, newEvent]);
-          closePopover();
-          setConflictAlert((prev) => ({ ...prev, isOpen: false }));
-        }
+    // Call API First
+    try {
+      await agendaService.updateSessionTime(selectedSessionId, {
+        data_competencia: format(finalStart, "yyyy-MM-dd"),
+        hora_inicio: startTime,
+        hora_fim: endTime,
       });
-      return;
+      toast.success("Sessão alocada com sucesso!");
+      setRefreshTrigger((prev) => prev + 1);
+      closePopover();
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao alocar sessão.");
     }
-
-    setEvents([...events, newEvent]);
-    closePopover();
   };
 
-  const handleStatusChange = (newStatus: string) => {
+  const handleStatusChange = async (newStatus: string) => {
     if (!selectedEvent) return;
-    setEvents((prev) => prev.map((e) => e.id === selectedEvent.id ? { ...e, status: newStatus } : e));
-    setSelectedEvent({ ...selectedEvent, status: newStatus });
+    try {
+      await agendaService.updateSessionStatus(selectedEvent.id, newStatus);
+      // Optimistic update for immediate UI feedback
+      setEvents((prev) => prev.map((e) => e.id === selectedEvent.id ? { ...e, status: newStatus } : e));
+      setSelectedEvent({ ...selectedEvent, status: newStatus });
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao atualizar status.");
+    }
   };
 
-  const handleUnschedule = () => {
+  const handleUnschedule = async () => {
     if (!selectedEvent) return;
-    setEvents((prev) => prev.filter((e) => e.id !== selectedEvent.id));
-    closePopover();
+    try {
+      await agendaService.unscheduleSession(selectedEvent.id);
+      toast.success("Sessão removida da agenda.");
+      setRefreshTrigger((prev) => prev + 1);
+      closePopover();
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao desagendar sessão.");
+    }
   };
 
-  const handleEventDrop = ({ event, start, end }: any) => {
-    if (checkConflict(event.professional, start, end, event.id)) {
-      setConflictAlert({
-        isOpen: true,
-        professional: event.professional,
-        onConfirm: () => {
-          setEvents((prevEvents) => prevEvents.map((e) => (e.id === event.id ? { ...e, start, end } : e)));
-          setConflictAlert((prev) => ({ ...prev, isOpen: false }));
-        }
+  const handleEventDrop = async ({ event, start, end }: any) => {
+    try {
+      await agendaService.updateSessionTime(event.id, {
+        data_competencia: format(start, "yyyy-MM-dd"),
+        hora_inicio: format(start, "HH:mm"),
+        hora_fim: format(end, "HH:mm")
       });
-      return;
+      // Optimistic update
+      setEvents((prevEvents) => prevEvents.map((e) => (e.id === event.id ? { ...e, start, end } : e)));
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao mover a sessão.");
+      setRefreshTrigger((prev) => prev + 1);
     }
-    setEvents((prevEvents) => prevEvents.map((e) => (e.id === event.id ? { ...e, start, end } : e)));
   };
 
-  const handleEventResize = ({ event, start, end }: any) => {
-    if (checkConflict(event.professional, start, end, event.id)) {
-      setConflictAlert({
-        isOpen: true,
-        professional: event.professional,
-        onConfirm: () => {
-          setEvents((prevEvents) => prevEvents.map((e) => (e.id === event.id ? { ...e, start, end } : e)));
-          setConflictAlert((prev) => ({ ...prev, isOpen: false }));
-        }
+  const handleEventResize = async ({ event, start, end }: any) => {
+    try {
+      await agendaService.updateSessionTime(event.id, {
+        data_competencia: format(start, "yyyy-MM-dd"),
+        hora_inicio: format(start, "HH:mm"),
+        hora_fim: format(end, "HH:mm")
       });
-      return;
+      // Optimistic update
+      setEvents((prevEvents) => prevEvents.map((e) => (e.id === event.id ? { ...e, start, end } : e)));
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao redimensionar a sessão.");
+      setRefreshTrigger((prev) => prev + 1);
     }
-    setEvents((prevEvents) => prevEvents.map((e) => (e.id === event.id ? { ...e, start, end } : e)));
   };
 
   const filteredEvents = events.filter((event) => {
@@ -420,8 +451,8 @@ export default function AgendaPage() {
             dayHeaderFormat: "EEEE dd/MMM",
           }}
           events={displayEvents}
-          startAccessor="start"
-          endAccessor="end"
+          startAccessor={(event: any) => new Date(event.start)}
+          endAccessor={(event: any) => new Date(event.end)}
           culture="pt-BR"
           views={availableViews}
           view={currentView}
@@ -481,7 +512,7 @@ export default function AgendaPage() {
                           <SelectValue placeholder="Selecione um paciente..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {mockPatients.map((p) => (
+                          {patients.map((p) => (
                             <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
                           ))}
                         </SelectContent>

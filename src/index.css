@@ -325,3 +325,49 @@
 .rbc-agenda-event-cell {
   color: #ffffff !important;
 }
+
+
+/* =======================================================
+   AJUSTE BRUTO DO INPUT NATIVO DE HORA (TIME PICKER)
+   ======================================================= */
+
+/* 1. Força um respiro dentro da caixa de texto para caber o ícone */
+input[type="time"] {
+  padding-right: 10px !important; 
+}
+
+/* 2. Arranca o ícone da parede direita à força */
+input[type="time"]::-webkit-calendar-picker-indicator {
+  position: relative !important;
+  right: 6px !important; /* Empurra o ícone fisicamente 6 pixels para a esquerda */
+  cursor: pointer !important;
+  opacity: 0.6 !important;
+  transition: opacity 0.2s ease !important;
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1 !important;
+}
+
+/* =======================================================
+   AJUSTE DE TABELA DA VISÃO AGENDA (REACT-BIG-CALENDAR)
+   ======================================================= */
+/* Força a borda esquerda na coluna de Hora quando há múltiplos eventos no mesmo dia */
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td.rbc-agenda-time-cell {
+  border-left: 1px solid #e2e8f0 !important; /* Usa a mesma cor padrão de borda do Tailwind (slate-200) */
+}
+
+
+/* =======================================================
+   AJUSTE DE SCROLL DA VISÃO AGENDA (REACT-BIG-CALENDAR)
+   ======================================================= */
+/* Força a criação de uma barra de rolagem vertical quando a lista de eventos for maior que a tela */
+.rbc-agenda-view {
+  overflow-y: auto !important;
+}
+
+.rbc-agenda-content {
+  overflow-y: auto !important;
+  /* Garante que o scroll fique suave no mobile/iOS */
+  -webkit-overflow-scrolling: touch; 
+}
